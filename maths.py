@@ -40,7 +40,6 @@ def task(new_arr):
 		equations = build_equation(equations, elements)
 		i = i +1
 
-	
 def build_equation(equations, elements):
 	new_equations = []
 	for equation in equations:
