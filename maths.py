@@ -1,11 +1,20 @@
 # -*- coding: windows-1251 -*-
 
 # 1 Линейное y = ax + b
-# 2 Теорема пифагора
-# 3 Квадратные
+# 2 Теорема пифагора a ^ 2 + b ^ 2 = c ^ 2
+# 3 Квадратные ax ^ 2 + bx + c = 0
 
 import os
 import subprocess, time
+from threading import Lock
+
+from threading import Lock
+import re
+import hashlib
+
+
+
+myLock = Lock()
 
 elements = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "+", "-", "*", "/"]
 
@@ -24,10 +33,7 @@ def task(new_arr):
 	i = 1
 	while (True):
 		current_time = time.time()
-		for equation in equations:
-			#if (equation == "{{x0}}*{{x1}}+{{x2}}"):
-			#	print(22222)
-			
+		for equation in equations:			
 			if calc(equation, first['y'], first['x']):
 				result = True
 				for new_arr_item in new_arr:
@@ -35,10 +41,11 @@ def task(new_arr):
 						result = False
 						break
 				if result:
-					print("Решение: " + equation)
+					writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation)
+					print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation)
 				
 		total_time = time.time() - current_time
-		print("Проверены уравнения длинной " + str(i) + " символов за " + str(round(total_time, 2)) + " сек")
+		print(time.strftime("%d.%m.%Y %H:%M:%S") + " Проверены уравнения длинной " + str(i) + " символов за " + str(round(total_time, 2)) + " сек")
 		equations = build_equation(equations, elements)
 		i = i +1
 
@@ -63,6 +70,12 @@ def calc(equation, y, x):
 	except:			
 		return False
 
+def writeln(str):
+	myLock.acquire()		
+	with open(script_path + '\\sucess.txt', 'a') as the_file:
+		the_file.write(str + "\n")
+	myLock.release()
+
 with open(script_path + '\\data.txt') as f:
 	arr = f.readlines()
 
@@ -75,9 +88,7 @@ for arr_item in arr:
 	x = arr_item
 	new_arr.append({"y": y, "x": x})
 
-
-	#for element in elements:
-
 task(new_arr)
 
+#Команда для запуска:
 #c:\\Python38\\python z:\\python\\maths\\maths.py
