@@ -5,6 +5,7 @@
 # 3 Квадратные
 
 import os
+import subprocess, time
 
 elements = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "+", "-", "*", "/"]
 
@@ -22,6 +23,7 @@ def task(new_arr):
 	equations = elements
 	i = 1
 	while (True):
+		current_time = time.time()
 		for equation in equations:
 			#if (equation == "{{x0}}*{{x1}}+{{x2}}"):
 			#	print(22222)
@@ -35,8 +37,8 @@ def task(new_arr):
 				if result:
 					print("Решение: " + equation)
 				
-
-		print("Проверены уравнения длинной: " + str(i))
+		total_time = time.time() - current_time
+		print("Проверены уравнения длинной " + str(i) + " символов за " + str(round(total_time, 2)) + " сек")
 		equations = build_equation(equations, elements)
 		i = i +1
 
