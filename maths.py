@@ -4,6 +4,8 @@
 # 2 Теорема пифагора a ^ 2 + b ^ 2 = c ^ 2
 # 3 Квадратные ax ^ 2 + bx + c = 0
 
+# 6 значная формула до соседней оптимизации - строк 34 012 224, размер файла 453 Мб
+
 import os
 import subprocess, time
 from threading import Lock
@@ -11,8 +13,6 @@ from threading import Lock
 from threading import Lock
 import re
 import hashlib
-
-
 
 myLock = Lock()
 
@@ -26,42 +26,57 @@ def task(new_arr):
 	new_first_x = []
 	fcount = 0
 	for f in first['x']:
-		new_first_x.append("{{x" + str(fcount) + "}}")
+		new_first_x.append("{x" + str(fcount) + "}")
 		fcount = fcount + 1
 	elements = elements + new_first_x
-	equations = elements
+
+	with open(script_path + "\\equations.txt", 'w') as f:
+		for e in elements:
+			f.write("%s\n" % e)
+
 	i = 1
 	while (True):
 		current_time = time.time()
-		for equation in equations:			
-			if calc(equation, first['y'], first['x']):
-				result = True
-				for new_arr_item in new_arr:
-					if not calc(equation, new_arr_item['y'], new_arr_item['x']):
-						result = False
-						break
-				if result:
-					writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation)
-					print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation)
+
+		with open(script_path + "\\equations.txt") as infile:
+			for equation in infile:
+				equation = equation.strip()
+				if calc(equation, first['y'], first['x']):
+					result = True
+					for new_arr_item in new_arr:
+						if not calc(equation, new_arr_item['y'], new_arr_item['x']):
+							result = False
+							break
+					if result:
+						writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation)
+						print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation)
 				
 		total_time = time.time() - current_time
 		print(time.strftime("%d.%m.%Y %H:%M:%S") + " Проверены уравнения длинной " + str(i) + " символов за " + str(round(total_time, 2)) + " сек")
-		equations = build_equation(equations, elements)
+		build_equation(elements)
 		i = i +1
 
-def build_equation(equations, elements):
-	new_equations = []
-	for equation in equations:
-		for element in elements:
-			new_equations.append(equation + element)
-	return new_equations
+def build_equation(elements):
+
+	with open(script_path + "\\equations.txt") as infile:
+		with open(script_path + "\\equations_tmp.txt", "a") as k:
+			for equation in infile:
+				equation = equation.strip()
+				if equation:
+					for element in elements:
+						k.write(str(equation) + str(element) + "\n")
+	
+	os.remove(script_path + "\\equations.txt")
+	os.rename(script_path + "\\equations_tmp.txt", script_path + "\\equations.txt")
+
+	return True
 
 
 def calc(equation, y, x):
 	try:
 		x_count = 0
 		for x_item in x:
-			equation = equation.replace("{{x" + str(x_count) + "}}", x_item)  
+			equation = equation.replace("{x" + str(x_count) + "}", x_item)  
 			x_count = x_count + 1
 
 		y_equation = eval(equation)
@@ -75,6 +90,12 @@ def writeln(str):
 	with open(script_path + '\\sucess.txt', 'a') as the_file:
 		the_file.write(str + "\n")
 	myLock.release()
+
+if os.path.isfile(script_path + "\\equations.txt"):
+	os.remove(script_path + "\\equations.txt")
+	
+if os.path.isfile(script_path + "\\equations_tmp.txt"):
+	os.remove(script_path + "\\equations_tmp.txt")
 
 with open(script_path + '\\data.txt') as f:
 	arr = f.readlines()
