@@ -1,9 +1,4 @@
 # -*- coding: windows-1251 -*-
-
-# 1 Линейное y = ax + b
-# 2 Теорема пифагора a ^ 2 + b ^ 2 = c ^ 2
-# 3 Квадратные ax ^ 2 + bx + c = 0
-
 import os
 import subprocess, time
 from threading import Lock
@@ -12,50 +7,82 @@ from threading import Lock
 import re
 import hashlib
 
+import sys
+import warnings
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+
 myLock = Lock()
 
+#6 символов, размер файла 355Мб
+#6 символов, оптимизация "variable -> v" размер файла 161Мб
+
+
+# 1 Линейное 5 символов: y = ax + b
+# 2 Теорема пифагора 8 символов: a ** 2 + b ** 2 = c ** 2
+# 3 Квадратные ax ^ 2 + bx + c = 0
+data_id = 2
+
+data_filename = "data" + str(data_id) + ".txt"
+
+
 elements = [
-	"{number|0}",
-	"{number|1}",
-	"{number|2}",
-	"{number|3}",
-	"{number|4}",
-	"{number|5}",
-	"{number|6}",
-	"{number|7}",
-	"{number|8}",
-	"{number|9}",
-	"{number|10}",
-	"{operator|+}", 
-	"{operator|-}", 
-	"{operator|*}", 
-	"{operator|/}"
+	"{n|0}",
+	"{n|1}",
+	"{n|2}",
+	"{n|3}",
+	"{n|4}",
+	"{n|5}",
+	"{n|6}",
+	"{n|7}",
+	"{n|8}",
+	"{n|9}",
+	"{n|10}",
+	"{o|+}", 
+	"{o|-}", 
+	"{o|*}", 
+	"{o|/}",
+	"{b|(}",
+	"{b|)}",
+	"{e|**2}",
+	"{e|**3}",
+	"{e|**0.5}",
+	"{e|**(1/3)}",
 ]
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 
 types = {
-	'number': {
-		'allow_left': ['operator'],
-		'allow_right': ['operator'],
+	#number
+	'n': {
+		'allow_left': ['o', 'b'],
 	},
-	'variable': {
-		'allow_left': ['operator'],
-		'allow_right': ['operator'],
+	#operator
+	'o': {
+		'allow_left': ['n', 'v', 'b'],
 	},
-	'operator': {
-		'allow_left': ['number', 'variable'],
-		'allow_right': ['number', 'variable'],
+	#brackets
+	'b': {
+		'allow_left': ['n', 'o', 'v', 'e'],
+	},
+	#variable
+	'v': {
+		'allow_left': ['o', 'b'],
+	},
+	#exponentiation
+	'e': {
+		'allow_left': ['n', 'o', 'b'],
 	},
 }
 
 def task(new_arr):
 	global elements
+	global data_id
 	first = new_arr[0]
 	new_first_x = []
 	fcount = 0
 	for f in first['x']:
-		new_first_x.append("{variable|x" + str(fcount) + "}")
+		new_first_x.append("{v|x" + str(fcount) + "}")
 		fcount = fcount + 1
 	elements = elements + new_first_x
 
@@ -80,8 +107,8 @@ def task(new_arr):
 							break
 					if result:
 						time_total = time.time() - time_total_start
-						writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation + " на " + str(round(time_total, 2)) + " сек")
-						print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение: " + equation + " на " + str(round(time_total, 2)) + " сек")
+						writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
+						print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
 				
 		time_total = time.time() - time_total_start
 		print(time.strftime("%d.%m.%Y %H:%M:%S") + " Проверены уравнения длинной " + str(i) + " символов на " + str(round(time_total, 2)) + " сек")
@@ -105,15 +132,17 @@ def build_equation(elements):
 
 	return True
 
-#Пример входящих данных: {number|7}{operator|+}{variable|x0}
+#Пример входящих данных: {n|7}{o|+}{v|x0}
 #Исходящие: 7 + 5, где 5 это x0
 def format(equation, x):
 	x_count = 0
 	for x_item in x:
-		equation = equation.replace("{variable|x" + str(x_count) + "}", x_item)  
+		equation = equation.replace("{v|x" + str(x_count) + "}", x_item)  
 		x_count = x_count + 1
-	equation = equation.replace("{number|", "")
-	equation = equation.replace("{operator|", "")
+	equation = equation.replace("{n|", "")
+	equation = equation.replace("{o|", "")
+	equation = equation.replace("{b|", "")
+	equation = equation.replace("{e|", "")
 	equation = equation.replace("}", "")
 
 	return equation
@@ -121,13 +150,13 @@ def format(equation, x):
 def calc(equation, y):
 	try:
 		y_equation = eval(equation)
-		if y_equation == int(y):
+		if float(y_equation) == float(y):
 			return True
 	except:			
 		return False
 
-#Входящие данные первый параметр: {number|7}{operator|+}{variable|x0}
-#Входящие данные второй параметр: {number|8}
+#Входящие данные первый параметр: {n|7}{o|+}{v|x0}
+#Входящие данные второй параметр: {n|8}
 #Результат должен быть False
 def is_allow_concat(equation, element):
 	equation1 = get_last_element(equation)
@@ -139,14 +168,15 @@ def is_allow_concat(equation, element):
 	else:
 		return False
 
-#Входящие данные {number|7}{operator|+}{variable|x0}
-#Результат {variable|x0}
+#Входящие данные {n|7}{o|+}{v|x0}
+#Результат {v|x0}
+#Не используем регулярки, ибо накладно
 def get_last_element(equation):
 	start = equation.rfind('{')
 	end = len(equation)
 	return equation[start:end]
 
-#Входящие параметры {number|8}
+#Входящие параметры {n|8}
 #Результат number
 #Не используем регулярки, ибо накладно
 def get_type(equation):
@@ -165,10 +195,10 @@ if os.path.isfile(script_path + "\\equations.txt"):
 if os.path.isfile(script_path + "\\equations_tmp.txt"):
 	os.remove(script_path + "\\equations_tmp.txt")
 
-with open(script_path + '\\data.txt') as f:
+with open(script_path + '\\' + data_filename) as f:
 	arr = f.readlines()
 
-new_arr = [] # [1, [1, 2, 3, 4, 5]] Первый элемент значение (решение) уравнения, второй элемент массив входящих данных
+new_arr = [] # [1, [1, 2, 3, 4, 5]] Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
 for arr_item in arr:
 	arr_item = arr_item.strip()
 	arr_item = arr_item.split("\t")
