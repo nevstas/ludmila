@@ -9,8 +9,8 @@ import hashlib
 
 import sys
 import warnings
-if not sys.warnoptions:
-    warnings.simplefilter("ignore")
+#if not sys.warnoptions:
+#	warnings.simplefilter("ignore")
 
 myLock = Lock()
 
@@ -21,7 +21,7 @@ myLock = Lock()
 # 1 Линейное 5 символов: y = ax + b
 # 2 Теорема пифагора 8 символов: a ** 2 + b ** 2 = c ** 2
 # 3 Квадратные ax ^ 2 + bx + c = 0
-data_id = 2
+data_id = 1
 
 data_filename = "data" + str(data_id) + ".txt"
 
@@ -86,7 +86,7 @@ def task(new_arr):
 		fcount = fcount + 1
 	elements = elements + new_first_x
 
-	with open(script_path + "\\equations.txt", 'w') as f:
+	with open(script_path + "\equations.txt", 'w') as f:
 		for e in elements:
 			f.write("%s\n" % e)
 
@@ -94,43 +94,34 @@ def task(new_arr):
 	time_total_start = time.time()
 	while (True):
 
-		with open(script_path + "\\equations.txt") as infile:
-			for equation in infile:
-				equation = equation.strip()
-				equation_format = format(equation, first['x'])
-				if calc(equation_format, first['y']):
-					result = True
-					for new_arr_item in new_arr:
-						equation_format = format(equation, new_arr_item['x'])
-						if not calc(equation_format, new_arr_item['y']):
-							result = False
-							break
-					if result:
-						time_total = time.time() - time_total_start
-						writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
-						print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
+		with open(script_path + "\equations.txt") as infile:
+			with open(script_path + "\equations_tmp.txt", "a") as k:
+				for equation in infile:
+					equation = equation.strip()
+					if equation:
+						for element in elements:
+							if is_allow_concat(equation, element):
+								k.write(str(equation) + str(element) + "\n")
+					equation_format = format(equation, first['x'])
+					if calc(equation_format, first['y']):
+						result = True
+						for new_arr_item in new_arr:
+							equation_format = format(equation, new_arr_item['x'])
+							if not calc(equation_format, new_arr_item['y']):
+								result = False
+								break
+						if result:
+							time_total = time.time() - time_total_start
+							writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
+							print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
+		
+		os.remove(script_path + "\equations.txt")
+		os.rename(script_path + "\equations_tmp.txt", script_path + "\equations.txt")
 				
 		time_total = time.time() - time_total_start
 		print(time.strftime("%d.%m.%Y %H:%M:%S") + " Проверены уравнения длинной " + str(i) + " символов на " + str(round(time_total, 2)) + " сек")
-		build_equation(elements)
+		#build_equation(elements)
 		i = i +1
-
-#Перемножаем (комбинаторик) существующие данные equations.txt с массивом elements, и помещаем результат обратно в equations.txt
-def build_equation(elements):
-
-	with open(script_path + "\\equations.txt") as infile:
-		with open(script_path + "\\equations_tmp.txt", "a") as k:
-			for equation in infile:
-				equation = equation.strip()
-				if equation:
-					for element in elements:
-						if is_allow_concat(equation, element):
-							k.write(str(equation) + str(element) + "\n")
-	
-	os.remove(script_path + "\\equations.txt")
-	os.rename(script_path + "\\equations_tmp.txt", script_path + "\\equations.txt")
-
-	return True
 
 #Пример входящих данных: {n|7}{o|+}{v|x0}
 #Исходящие: 7 + 5, где 5 это x0
@@ -149,7 +140,9 @@ def format(equation, x):
 
 def calc(equation, y):
 	try:
-		y_equation = eval(equation)
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore") #Отключаем Warning на сулчай если в equation будет "4(3)"
+			y_equation = eval(equation)
 		if float(y_equation) == float(y):
 			return True
 	except:			
@@ -185,17 +178,17 @@ def get_type(equation):
 
 def writeln(str):
 	myLock.acquire()		
-	with open(script_path + '\\sucess.txt', 'a') as the_file:
+	with open(script_path + "\sucess.txt", 'a') as the_file:
 		the_file.write(str + "\n")
 	myLock.release()
 
-if os.path.isfile(script_path + "\\equations.txt"):
-	os.remove(script_path + "\\equations.txt")
+if os.path.isfile(script_path + "\equations.txt"):
+	os.remove(script_path + "\equations.txt")
 	
-if os.path.isfile(script_path + "\\equations_tmp.txt"):
-	os.remove(script_path + "\\equations_tmp.txt")
+if os.path.isfile(script_path + "\equations_tmp.txt"):
+	os.remove(script_path + "\equations_tmp.txt")
 
-with open(script_path + '\\' + data_filename) as f:
+with open(script_path + "\\" + data_filename) as f:
 	arr = f.readlines()
 
 new_arr = [] # [1, [1, 2, 3, 4, 5]] Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
@@ -210,4 +203,4 @@ for arr_item in arr:
 task(new_arr)
 
 #Команда для запуска:
-#c:\\Python38\\python z:\\python\\maths\\maths.py
+#c:\Python38\python z:\python\maths\maths.py
