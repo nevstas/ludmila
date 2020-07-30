@@ -14,6 +14,7 @@ import config
 
 myLock = Lock()
 
+#Форматирует уравнения
 #Пример входящих данных: {n|7}{o|+}{v|x0}
 #Исходящие: 7 + 5, где 5 это x0
 def format(equation, x):
@@ -29,6 +30,7 @@ def format(equation, x):
 
 	return equation
 
+#Выполняет уравнение и српанивает решение с 'y', если решение решено верно, то возвращает True
 #Пример входящих данных: "51 * 62 + 73" и "3235"
 #Исходящие True
 def calc(equation, y):
@@ -41,6 +43,9 @@ def calc(equation, y):
 	except:			
 		return False
 
+#Выполняет все (например 100шт) уравнения (например из файла data1.txt) и если все уравнения решены верно, то возвращает True
+#То, что функция calc() решила уравнение верно, не означает что это искомое уравнение. 
+#Если calc() вернула True, то запускаем функцию calc_all(), где проверяем уравнение на большом количестве данных
 #Пример входящих данных: массив "51 * 62 + 73" и "3235"
 #Исходящие True
 def calc_all(equation, new_arr):
@@ -51,7 +56,8 @@ def calc_all(equation, new_arr):
 	return True
 			
 		
-
+#Проверяет правилом можно ли делать конкатенцию двух соседей
+#Берет последний элемент уравнения, определяет его тип (например v) и сравнивает с правилом (['o', 'b']) добавляемого элемента (например n)
 #Входящие данные первый параметр: {n|7}{o|+}{v|x0}
 #Входящие данные второй параметр: {n|8}
 #Результат должен быть False
@@ -65,6 +71,7 @@ def is_allow_concat(equation, element):
 	else:
 		return False
 
+#Получает последний элемент уравнения
 #Входящие данные {n|7}{o|+}{v|x0}
 #Результат {v|x0}
 #Не используем регулярки, ибо накладно
@@ -73,6 +80,7 @@ def get_last_element(equation):
 	end = len(equation)
 	return equation[start:end]
 
+#Получает тип элемента
 #Входящие параметры {n|8}
 #Результат n
 #Не используем регулярки, ибо накладно
@@ -80,8 +88,9 @@ def get_type(equation):
 	end = equation.rfind('|')
 	return equation[1:end]
 
+#Пишет в лог log.txt (например найденные уравнения)
 def writeln(str):
 	myLock.acquire()		
-	with open(config.script_path + "\sucess.txt", 'a') as the_file:
+	with open(config.script_path + "\log.txt", 'a') as the_file:
 		the_file.write(str + "\n")
 	myLock.release()
