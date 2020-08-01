@@ -15,7 +15,8 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 
 # 1 Линейное 5 символов: y = ax + b
 # 2 Теорема пифагора 8 символов: a ** 2 + b ** 2 = c ** 2
-# 3 Квадратные a * x ^ 2 + b * x + c = 0
+# 4
+# Квадратные a * x ^ 2 + b * x + c = 0
 data_id = 1
 
 #Имя файла с 'x' и 'y', например если data_id = 1, то data_filename будет 'data1.txt'
