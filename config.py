@@ -38,13 +38,13 @@ elements = [
 
 	#операции: +, -, *, /
 	"o|+", 
-	"o|-", 
 	"o|*", 
 	"o|/",
+	"om|-", 
 
 	#скобки ( и )
-	"b|(",
-	"b|)",
+	"bl|(",
+	"br|)",
 
 	#степень: 2 степень, 3 степень, корень квадратный, корень кубический
 	"e|**2",
@@ -53,42 +53,43 @@ elements = [
 	"e|**(1/3)",
 ]
 
-#для первого формирования списка уравнений удаляем некоторые элементы (например "/", так как деление не может идти в начале уравнения)
-elements_start = list(elements)
-elements_start.remove('o|+')
-elements_start.remove('o|*')
-elements_start.remove('o|/')
-elements_start.remove('b|)')
-elements_start.remove('e|**2')
-elements_start.remove('e|**3')
-elements_start.remove('e|**0.5')
-elements_start.remove('e|**(1/3)')
-
 #Ключи - типы элементов
-#allow_left - правила при конкатенции. 
+#allow_left - правила при конкатенции, содержит типы элементов, которые могут находится слева
 #При конкатенции элемента типа number смотрится на то кто стоит слева, разрешены o(operator) и b(#brackets)
 #Если слева символ иного типа, то конкатенция не происходит
 #Это сделано для уменьшения кол-ва вариантов при комбинаторике, уменьшения кол-ва ненужных итераций и уменьшения размера файла с уравнениями
 types = {
+	#start начало строки
+	's': {
+		'allow_left': [],
+	},
 	#number
 	'n': {
-		'allow_left': ['o', 'b'],
+		'allow_left': ['s', 'o', 'om', 'bl'],
 	},
 	#operator
 	'o': {
-		'allow_left': ['n', 'b', 'v', 'e'],
+		'allow_left': ['n', 'bl', 'br', 'v', 'e'],
 	},
-	#brackets
-	'b': {
-		'allow_left': ['n', 'o', 'v', 'e'],
+	#operator minus
+	'om': {
+		'allow_left': ['s', 'n', 'bl', 'br', 'v', 'e'],
+	},
+	#bracket left
+	'bl': {
+		'allow_left': ['s', 'o', 'om', 'v', 'e'],
+	},
+	#bracket right
+	'br': {
+		'allow_left': ['n', 'v', 'e'],
 	},
 	#variable
 	'v': {
-		'allow_left': ['o', 'b'],
+		'allow_left': ['s', 'o', 'om', 'br'],
 	},
 	#exponentiation
 	'e': {
-		'allow_left': ['n', 'o', 'b', 'v'],
+		'allow_left': ['n', 'br', 'v'],
 	},
 }
 

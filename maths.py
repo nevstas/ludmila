@@ -25,11 +25,11 @@ def task(new_arr):
 		new_first_x.append("v|x" + str(fcount))
 		fcount = fcount + 1
 	config.elements = config.elements + new_first_x #добавляем к элементам все 'x', их может быть разное количество
-	config.elements_start = config.elements_start + new_first_x #добавляем к стартовым элементам все 'x', их может быть разное количество
 
 	with open(config.script_path + "\equations.txt", 'w') as f:
-		for e in config.elements_start:
-			f.write("%s\n" % e) #пишем в файл все элементы. В первой итерации будут проверяться уравнения типа y = 1, y = 2. Дальше уравнения будут усложняться
+		for element in config.elements:
+			if core_maths.is_allow_concat("", element): #комбинируем элементы с пустой строкой (тип s - start)
+				f.write("%s\n" % element) #пишем в файл все элементы. В первой итерации будут проверяться уравнения типа y = 1, y = 2. Дальше уравнения будут усложняться
 
 	i = 1
 	time_total_start = time.time()

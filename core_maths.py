@@ -88,6 +88,8 @@ def get_last_element(equation):
 #Результат n
 #Не используем регулярки, ибо накладно
 def get_type(equation):
+	if not equation:
+		return 's'
 	end = equation.rfind('|')
 	return equation[0:end]
 
