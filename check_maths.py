@@ -23,6 +23,8 @@ data_id = 2
 #Имя файла с 'x' и 'y', например если data_id = 1, то data_filename будет 'data1.txt'
 data_filename = "data" + str(data_id) + ".txt"
 
+#equation 2: "{b|(}{v|x0}{e|**2}{o|+}{v|x1}{e|**2}{b|)}{e|**0.5}"
+
 equation = "{b|(}{v|x0}{e|**2}{o|+}{v|x1}{e|**2}{b|)}{e|**0.5}"
 
 with open(script_path + "\\" + data_filename) as f:

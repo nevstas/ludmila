@@ -20,13 +20,13 @@ myLock = Lock()
 def format(equation, x):
 	x_count = 0
 	for x_item in x:
-		equation = equation.replace("{v|x" + str(x_count) + "}", x_item)  
+		equation = equation.replace("v|x" + str(x_count), x_item)  
 		x_count = x_count + 1
-	equation = equation.replace("{n|", "")
-	equation = equation.replace("{o|", "")
-	equation = equation.replace("{b|", "")
-	equation = equation.replace("{e|", "")
-	equation = equation.replace("}", "")
+	equation = equation.replace("n|", "")
+	equation = equation.replace("o|", "")
+	equation = equation.replace("b|", "")
+	equation = equation.replace("e|", "")
+	equation = equation.replace(";", "")
 
 	return equation
 
@@ -65,7 +65,7 @@ def is_allow_concat(equation, element):
 	equation1 = get_last_element(equation)
 	equation1_type = get_type(equation1)
 	equation2_type = get_type(element)
-	
+
 	if equation1_type in config.types[equation2_type]['allow_left']:
 		return True
 	else:
@@ -76,8 +76,11 @@ def is_allow_concat(equation, element):
 #Результат {v|x0}
 #Не используем регулярки, ибо накладно
 def get_last_element(equation):
-	start = equation.rfind('{')
+	if ';' not in equation:
+		return equation
+	start = equation.rfind(';') + 1
 	end = len(equation)
+
 	return equation[start:end]
 
 #Получает тип элемента
@@ -86,7 +89,7 @@ def get_last_element(equation):
 #Не используем регулярки, ибо накладно
 def get_type(equation):
 	end = equation.rfind('|')
-	return equation[1:end]
+	return equation[0:end]
 
 #Пишет в лог log.txt (например найденные уравнения)
 def writeln(str):
