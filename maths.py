@@ -25,45 +25,29 @@ def task(new_arr):
 		new_first_x.append("v|x" + str(fcount))
 		fcount = fcount + 1
 	config.elements = config.elements + new_first_x #добавляем к элементам все 'x', их может быть разное количество
+	
+	config.elements_len = len(config.elements)
 
-	with open(config.script_path + "\equations.txt", 'w') as f:
-		for element in config.elements:
-			if core_maths.is_allow_concat("", element): #комбинируем элементы с пустой строкой (тип s - start)
-				f.write("%s\n" % element) #пишем в файл все элементы. В первой итерации будут проверяться уравнения типа y = 1, y = 2. Дальше уравнения будут усложняться
+	equation = config.equation
 
 	i = 1
 	time_total_start = time.time()
 	while (True):
 
-		with open(config.script_path + "\equations.txt") as infile:
-			with open(config.script_path + "\equations_tmp.txt", "a") as k:
-				for equation in infile: #построчно читаем файл equations.txt без загрузки его в оперативную память
-					equation = equation.strip()
-					for element in config.elements: #проходимся по эталонным элементам	
-						if core_maths.is_allow_concat(equation, element): #проверяем по правилам можно ли делать конкатенцию соседей
-							if equation:
-								new_equation = str(equation) + ";" + str(element) + "\n"
-							else:
-								new_equation = str(element) + "\n"
-							k.write(new_equation) #и пишем в файл equations_tmp.txt комбинации, каждый элемент из файла equations.txt перемножается с эталонными элементами-
-							
-					
-					equation_format = core_maths.format(equation, first['x']) #форматируем уравнение
-					
-					if core_maths.calc(equation_format, first['y']): #если уравнение выполнено на одном наборе данных x и y
-						
-						if core_maths.calc_all(equation, new_arr): #тогда выполняем проверку уравнения на большом наборе данных (например 100)
-							time_total = time.time() - time_total_start
-							core_maths.writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
-							print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.data_id) + ": " + equation + " на " + str(round(time_total, 2)) + " сек")
-		
+		equation_format = core_maths.format(equation, first['x']) #форматируем уравнение
 
-		#!!!!!!!!!!!!!! удалить последнюю строку в equations_tmp.txt
-		os.remove(config.script_path + "\equations.txt") #удаляем файл equations.txt
-		os.rename(config.script_path + "\equations_tmp.txt", config.script_path + "\equations.txt") #и на его место ложим новый файл equations_tmp.txt, в котором предыдущие уравнения перемножаются с эталонными элементами
+		#print(core_maths.format_human(equation))
+		#core_maths.writeln(core_maths.format_human(equation))
+
+		if core_maths.calc(equation_format, first['y']): #если уравнение выполнено на одном наборе данных x и y
+			
+			if core_maths.calc_all(equation, new_arr): #тогда выполняем проверку уравнения на большом наборе данных (например 100)
+				time_total = time.time() - time_total_start
+				core_maths.writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.data_id) + ": " + core_maths.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
+				print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.data_id) + ": " + core_maths.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
 				
-		time_total = time.time() - time_total_start
-		print(time.strftime("%d.%m.%Y %H:%M:%S") + " Проверены уравнения длинной " + str(i) + " символов на " + str(round(time_total, 2)) + " сек")
+		equation = core_maths.equation_number_increment(equation)
+
 		i = i +1
 
 if os.path.isfile(config.script_path + "\equations.txt"):

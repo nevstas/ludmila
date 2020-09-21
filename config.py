@@ -22,6 +22,8 @@ data_id = 1
 #Имя файла с 'x' и 'y', например если data_id = 1, то data_filename будет 'data1.txt'
 data_filename = "data" + str(data_id) + ".txt"
 
+equation = [0] #0 - 20
+
 #элементы, из которых составляются уравнения путем конкатенции друг с другом
 elements = [
 	#числа: 0-10
@@ -54,6 +56,8 @@ elements = [
 	"e|**(1/3)",
 ]
 
+elements_len = len(elements) #21
+
 #Ключи - типы элементов
 #allow_left - правила при конкатенции, содержит типы элементов, которые могут находится слева
 #При конкатенции элемента типа number смотрится на то кто стоит слева, разрешены o(operator) и b(#brackets)
@@ -70,7 +74,7 @@ types = {
 	},
 	#operator
 	'o': {
-		'allow_left': ['n', 'bl', 'br', 'v', 'e'],
+		'allow_left': ['n', 'br', 'v', 'e'] + ['s'],
 	},
 	#operator minus
 	'om': {
@@ -82,7 +86,7 @@ types = {
 	},
 	#bracket right
 	'br': {
-		'allow_left': ['n', 'v', 'e'],
+		'allow_left': ['n', 'v', 'e']  + ['s'],
 	},
 	#variable
 	'v': {
@@ -90,7 +94,7 @@ types = {
 	},
 	#exponentiation
 	'e': {
-		'allow_left': ['n', 'br', 'v'],
+		'allow_left': ['n', 'br', 'v']  + ['s'],
 	},
 }
 

@@ -15,18 +15,21 @@ import config
 myLock = Lock()
 
 #Форматирует уравнения
-#Пример входящих данных: {n|7}{o|+}{v|x0}
+#Пример входящих данных: [1, 2, 3]
 #Исходящие: 7 + 5, где 5 это x0
 def format(equation, x):
+	equation = ''.join([config.elements[i] for i in equation])
+
 	x_count = 0
 	for x_item in x:
 		equation = equation.replace("v|x" + str(x_count), x_item)  
 		x_count = x_count + 1
 	equation = equation.replace("n|", "")
 	equation = equation.replace("o|", "")
-	equation = equation.replace("b|", "")
+	equation = equation.replace("om|", "")
+	equation = equation.replace("bl|", "")
+	equation = equation.replace("br|", "")
 	equation = equation.replace("e|", "")
-	equation = equation.replace(";", "")
 
 	return equation
 
@@ -56,35 +59,24 @@ def calc_all(equation, new_arr):
 	return True
 			
 		
-#Проверяет правилом можно ли делать конкатенцию двух соседей
-#Берет последний элемент уравнения, определяет его тип (например v) и сравнивает с правилом (['o', 'b']) добавляемого элемента (например n)
-#Входящие данные первый параметр: {n|7}{o|+}{v|x0}
-#Входящие данные второй параметр: {n|8}
-#Результат должен быть False
-def is_allow_concat(equation, element):
-	equation1 = get_last_element(equation)
-	equation1_type = get_type(equation1)
-	equation2_type = get_type(element)
+#Проверяет число по allow соседней, стоящих друг с другом 
+def check_allow_concat(equation):
+	for key, e in enumerate(equation):
+		if key == 0:
+			left_element = ''
+			left_element_type = get_type(left_element)
+		else:
+			left_element = equation[key - 1]
+			left_element_type = get_type(config.elements[left_element])
+		right_element = e
+		right_element_type = get_type(config.elements[right_element])
 
-	if equation1_type in config.types[equation2_type]['allow_left']:
-		return True
-	else:
-		return False
-
-#Получает последний элемент уравнения
-#Входящие данные {n|7}{o|+}{v|x0}
-#Результат {v|x0}
-#Не используем регулярки, ибо накладно
-def get_last_element(equation):
-	if ';' not in equation:
-		return equation
-	start = equation.rfind(';') + 1
-	end = len(equation)
-
-	return equation[start:end]
+		if not left_element_type in config.types[right_element_type]['allow_left']:
+			return {'result': False, 'key': key}
+	return {'result': True, 'key': 0}
 
 #Получает тип элемента
-#Входящие параметры {n|8}
+#Входящие параметры n|8
 #Результат n
 #Не используем регулярки, ибо накладно
 def get_type(equation):
@@ -99,3 +91,48 @@ def writeln(str):
 	with open(config.script_path + "\log.txt", 'a') as the_file:
 		the_file.write(str + "\n")
 	myLock.release()
+
+#Входящие данные [12, 9, 5]
+#Исходящие данные [12, 9, 6]
+def equation_number_increment(equation):
+	current_index = len(equation) - 1
+	while (True):
+		equation = equation_number_increment_by_index(equation, current_index)
+		check_equation = check_allow_concat(equation)
+
+		if check_equation['result']:
+			return equation
+		else:
+			for key, e in enumerate(equation):
+				if key > check_equation['key']:
+					equation[key] = 0
+			current_index = check_equation['key']
+
+def equation_number_increment_by_index(equation, current_index):
+	while (True):
+		current_number = equation[current_index]
+		if current_number < (config.elements_len - 1):
+			equation[current_index] = current_number + 1
+			return equation
+		else:
+			if current_index > 0:
+				equation[current_index] = 0
+				current_index = current_index - 1
+			else:
+				for key, number in enumerate(equation):
+					equation[key] = 0
+				print('Проверены уравноения длинной ' + str(len(equation)))
+				equation = [0] + equation
+				return equation
+
+#Форматирование уравнения ы читабельный вид
+#Входящие данные [1, 2, 3]
+#исходящие данные v|x0;o|*;v|x1;o|+;v|x2
+def format_human(equation):
+	equation_human = ""
+	for e in equation:
+		if equation_human == "":
+			equation_human = config.elements[e]
+		else:
+			equation_human = equation_human + ';' + config.elements[e]
+	return equation_human
