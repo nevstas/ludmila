@@ -30,7 +30,6 @@ def task(new_arr):
 
 	equation = config.equation
 
-	i = 1
 	time_total_start = time.time()
 	while (True):
 
@@ -47,14 +46,6 @@ def task(new_arr):
 				print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.data_id) + ": " + core_maths.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
 				
 		equation = core_maths.equation_number_increment(equation)
-
-		i = i +1
-
-if os.path.isfile(config.script_path + "\equations.txt"):
-	os.remove(config.script_path + "\equations.txt") #удаляем equations.txt
-	
-if os.path.isfile(config.script_path + "\equations_tmp.txt"):
-	os.remove(config.script_path + "\equations_tmp.txt") #удаляем equations_tmp.txt
 
 with open(config.script_path + "\\" + config.data_filename) as f:
 	arr = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"

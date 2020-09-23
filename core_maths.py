@@ -121,11 +121,11 @@ def equation_number_increment_by_index(equation, current_index):
 			else:
 				for key, number in enumerate(equation):
 					equation[key] = 0
-				print('Проверены уравноения длинной ' + str(len(equation)))
+				print('Проверены уравнения длиной ' + str(len(equation)))
 				equation = [0] + equation
 				return equation
 
-#Форматирование уравнения ы читабельный вид
+#Форматирование уравнения в читабельный вид
 #Входящие данные [1, 2, 3]
 #исходящие данные v|x0;o|*;v|x1;o|+;v|x2
 def format_human(equation):
