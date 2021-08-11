@@ -21,10 +21,9 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 # a ** 2 + b ** 2 = c ** 2 
 # bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
 
-# 3
-#  вадратные a * x ^ 2 + b * x + c = 0
+# 3  вадратные a * x ^ 2 + b * x + c = 0
 
-data_id = 1
+data_id = 2
 
 #»м€ файла с 'x' и 'y', например если data_id = 1, то data_filename будет 'data1.txt'
 data_filename = "data" + str(data_id) + ".txt"
@@ -82,7 +81,7 @@ types = {
 	},
 	#operator
 	'o': {
-		'allow_left': ['n', 'br', 'v', 'e'] + ['s'],
+		'allow_left': ['n', 'br', 'v', 'e'],
 	},
 	#operator minus
 	'om': {
@@ -94,7 +93,7 @@ types = {
 	},
 	#bracket right
 	'br': {
-		'allow_left': ['n', 'v', 'e']  + ['s'],
+		'allow_left': ['n', 'v', 'e'],
 	},
 	#variable
 	'v': {
@@ -102,7 +101,7 @@ types = {
 	},
 	#exponentiation
 	'e': {
-		'allow_left': ['n', 'br', 'v']  + ['s'],
+		'allow_left': ['n', 'br', 'v'],
 	},
 }
 

@@ -36,7 +36,7 @@ def task(new_arr):
 		equation_format = core.format(equation, first['x']) #форматируем уравнение
 
 		#print(core.format_human(equation))
-		core.writeln(core.format_human(equation))
+		# core.writeln(core.format_human(equation))
 
 		if core.calc(equation_format, first['y']): #если уравнение выполнено на одном наборе данных x и y
 			
