@@ -11,7 +11,7 @@ import sys
 import warnings
 
 import config
-import core_maths
+import core
 
 myLock = Lock()
 
@@ -33,19 +33,19 @@ def task(new_arr):
 	time_total_start = time.time()
 	while (True):
 
-		equation_format = core_maths.format(equation, first['x']) #форматируем уравнение
+		equation_format = core.format(equation, first['x']) #форматируем уравнение
 
-		#print(core_maths.format_human(equation))
-		#core_maths.writeln(core_maths.format_human(equation))
+		#print(core.format_human(equation))
+		core.writeln(core.format_human(equation))
 
-		if core_maths.calc(equation_format, first['y']): #если уравнение выполнено на одном наборе данных x и y
+		if core.calc(equation_format, first['y']): #если уравнение выполнено на одном наборе данных x и y
 			
-			if core_maths.calc_all(equation, new_arr): #тогда выполн€ем проверку уравнени€ на большом наборе данных (например 100)
+			if core.calc_all(equation, new_arr): #тогда выполн€ем проверку уравнени€ на большом наборе данных (например 100)
 				time_total = time.time() - time_total_start
-				core_maths.writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " –ешение data" + str(config.data_id) + ": " + core_maths.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
-				print(time.strftime("%d.%m.%Y %H:%M:%S") + " –ешение data" + str(config.data_id) + ": " + core_maths.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
+				core.writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " –ешение data" + str(config.data_id) + ": " + core.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
+				print(time.strftime("%d.%m.%Y %H:%M:%S") + " –ешение data" + str(config.data_id) + ": " + core.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
 				
-		equation = core_maths.equation_number_increment(equation)
+		equation = core.equation_number_increment(equation)
 
 with open(config.script_path + "\\" + config.data_filename) as f:
 	arr = f.readlines() #считываем набор данных (например из файла data1.txt). ѕример данных "3235	51	62	73"
@@ -62,4 +62,4 @@ for arr_item in arr:
 task(new_arr) #вызываем основноую функцию
 
 # оманда дл€ запуска:
-#c:\Python38\python e:\python\maths\maths.py
+#c:\Python37\python e:\python\maths\ludmila.py
