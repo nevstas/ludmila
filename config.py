@@ -23,7 +23,6 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 
 # 3 р€д простых чисел
 
-# 4  вадратные a * x ^ 2 + b * x + c = 0
 
 data_id = 2
 
