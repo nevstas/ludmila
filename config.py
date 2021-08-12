@@ -21,7 +21,9 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 # a ** 2 + b ** 2 = c ** 2 
 # bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
 
-# 3  вадратные a * x ^ 2 + b * x + c = 0
+# 3 р€д простых чисел
+
+# 4  вадратные a * x ^ 2 + b * x + c = 0
 
 data_id = 2
 

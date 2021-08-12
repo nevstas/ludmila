@@ -47,7 +47,7 @@ def task(new_arr):
 				
 		equation = core.equation_number_increment(equation)
 
-with open(config.script_path + "\\" + config.data_filename) as f:
+with open(config.script_path + "\\datasets\\" + config.data_filename) as f:
 	arr = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
 
 new_arr = [] #В конце цикла массив new_arr должен содержать элементы вида [3235, [51, 62, 73]] Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
@@ -60,6 +60,3 @@ for arr_item in arr:
 	new_arr.append({"y": y, "x": x})
 
 task(new_arr) #вызываем основноую функцию
-
-#Команда для запуска:
-#c:\Python37\python e:\python\maths\ludmila.py
