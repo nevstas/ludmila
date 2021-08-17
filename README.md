@@ -87,13 +87,13 @@ c:\Python37\python e:\python\maths\ludmila.py
 
 ## Обсуждение на форумах математиков и программистов
 
-- [ru.stackoverflow.com](https://ru.stackoverflow.com/questions/1318101/gpu-%d0%b2%d1%8b%d1%87%d0%b8%d1%81%d0%bb%d0%b5%d0%bd%d0%b8%d1%8f-%d0%b2%d0%bc%d0%b5%d1%81%d1%82%d0%be-cpu-%d0%b2%d1%8b%d1%87%d0%b8%d1%81%d0%bb%d0%b5%d0%bd%d0%b8%d0%b9)
 - [linux.org.ru](https://www.linux.org.ru/forum/general/16478781)
-- [cyberforum.ru](https://www.cyberforum.ru/python-science/thread2865629.html)
+- [dxdy.ru](https://dxdy.ru/topic146962.html)
+- [ru.stackoverflow.com](https://ru.stackoverflow.com/questions/1318101/gpu-%d0%b2%d1%8b%d1%87%d0%b8%d1%81%d0%bb%d0%b5%d0%bd%d0%b8%d1%8f-%d0%b2%d0%bc%d0%b5%d1%81%d1%82%d0%be-cpu-%d0%b2%d1%8b%d1%87%d0%b8%d1%81%d0%bb%d0%b5%d0%bd%d0%b8%d0%b9)
 - [python.su](https://python.su/forum/topic/40596/)
 - [mathhelpplanet.com](http://mathhelpplanet.com/viewtopic.php?f=51&t=74861)
-- [dxdy.ru](https://dxdy.ru/topic146962.html)
-- [alexlarin.com](https://alexlarin.com/viewtopic.php?f=4&t=17347)
+- [cyberforum.ru](https://www.cyberforum.ru/python-science/thread2865629.html)
 - [mathforum.ru](http://www.mathforum.ru/forum/read/1/103766/)
+- [alexlarin.com](https://alexlarin.com/viewtopic.php?f=4&t=17347)
 - [math10.com](https://www.math10.com/ru/forum/viewtopic.php?f=42&t=3185)
 - [math.hashcode.ru](http://math.hashcode.ru/questions/226775/python-ludmila-%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BD%D0%B5%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%BD%D1%8B%D1%85-%D0%BC%D0%B0%D1%82%D0%B5%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D1%85-%D0%B7%D0%B0%D0%B4%D0%B0%D1%87-%D0%BC%D0%B5%D1%82%D0%BE%D0%B4%D0%BE%D0%BC-%D0%BF%D0%BE%D0%B4%D0%B1%D0%BE%D1%80%D0%B0)
