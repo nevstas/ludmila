@@ -1,29 +1,16 @@
-import os
-import subprocess, time
+import time
 from threading import Lock
-
-from threading import Lock
-import re
-import hashlib
-
-import sys
-import warnings
-
-import config
 import core
+import config
 
 myLock = Lock()
 
 def task(dataset):
-	global config
 	first_element_of_dataset = dataset[0] #Берем из большого набора данных (например 100) первый элемент
 	variable_elements = []
-	variable_count = 0
-	for f in first_element_of_dataset['x']:
+	for variable_count, f in enumerate(first_element_of_dataset['x']):
 		variable_elements.append("v|x" + str(variable_count))
-		variable_count = variable_count + 1
 	config.elements = config.elements + variable_elements #добавляем к элементам все 'x', их может быть разное количество
-	
 	config.elements_len = len(config.elements)
 
 	equation = config.equation

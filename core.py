@@ -1,14 +1,5 @@
-import os
-import subprocess, time
 from threading import Lock
-
-from threading import Lock
-import re
-import hashlib
-
-import sys
 import warnings
-
 import config
 
 myLock = Lock()
@@ -18,11 +9,8 @@ myLock = Lock()
 #Исходящие: 7 + 5, где 5 это x0
 def format(equation, x):
 	equation = ''.join([config.elements[i] for i in equation])
-
-	variable_count = 0
-	for x_item in x:
+	for variable_count, x_item in enumerate(x):
 		equation = equation.replace("v|x" + str(variable_count), x_item)
-		variable_count = variable_count + 1
 	equation = equation.replace("n|", "")
 	equation = equation.replace("o|", "")
 	equation = equation.replace("om|", "")

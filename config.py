@@ -1,13 +1,4 @@
 import os
-import subprocess, time
-from threading import Lock
-
-from threading import Lock
-import re
-import hashlib
-
-import sys
-import warnings
 
 #Путь к располажению выполняемого скрипта
 script_path = os.path.dirname(os.path.realpath(__file__))
