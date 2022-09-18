@@ -1,4 +1,3 @@
-# -*- coding: windows-1251 -*-
 import os
 import subprocess, time
 from threading import Lock
@@ -14,9 +13,9 @@ import config
 
 myLock = Lock()
 
-#Форматирует уравнения
-#Пример входящих данных: [1, 2, 3]
-#Исходящие: 7 + 5, где 5 это x0
+#Р¤РѕСЂРјР°С‚РёСЂСѓРµС‚ СѓСЂР°РІРЅРµРЅРёСЏ
+#РџСЂРёРјРµСЂ РІС…РѕРґСЏС‰РёС… РґР°РЅРЅС‹С…: [1, 2, 3]
+#РСЃС…РѕРґСЏС‰РёРµ: 7 + 5, РіРґРµ 5 СЌС‚Рѕ x0
 def format(equation, x):
 	equation = ''.join([config.elements[i] for i in equation])
 
@@ -33,24 +32,24 @@ def format(equation, x):
 
 	return equation
 
-#Выполняет уравнение и српанивает решение с 'y', если решение решено верно, то возвращает True
-#Пример входящих данных: "51 * 62 + 73" и "3235"
-#Исходящие True
+#Р’С‹РїРѕР»РЅСЏРµС‚ СѓСЂР°РІРЅРµРЅРёРµ Рё СЃСЂРїР°РЅРёРІР°РµС‚ СЂРµС€РµРЅРёРµ СЃ 'y', РµСЃР»Рё СЂРµС€РµРЅРёРµ СЂРµС€РµРЅРѕ РІРµСЂРЅРѕ, С‚Рѕ РІРѕР·РІСЂР°С‰Р°РµС‚ True
+#РџСЂРёРјРµСЂ РІС…РѕРґСЏС‰РёС… РґР°РЅРЅС‹С…: "51 * 62 + 73" Рё "3235"
+#РСЃС…РѕРґСЏС‰РёРµ True
 def calc(equation, y):
 	try:
 		with warnings.catch_warnings():
-			warnings.simplefilter("ignore") #Отключаем Warning на сулчай если в equation будет не вылидным, например "4(3)"
+			warnings.simplefilter("ignore") #РћС‚РєР»СЋС‡Р°РµРј Warning РЅР° СЃСѓР»С‡Р°Р№ РµСЃР»Рё РІ equation Р±СѓРґРµС‚ РЅРµ РІС‹Р»РёРґРЅС‹Рј, РЅР°РїСЂРёРјРµСЂ "4(3)"
 			result_of_equation = eval(equation)
 		if float(result_of_equation) == float(y):
 			return True
 	except:
 		return False
 
-#Выполняет все (например 100шт) уравнения (например из файла data1.txt) и если все уравнения решены верно, то возвращает True
-#То, что функция calc() решила уравнение верно, не означает что это искомое уравнение. 
-#Если calc() вернула True, то запускаем функцию calc_all(), где проверяем уравнение на большом количестве данных
-#Пример входящих данных: массив "51 * 62 + 73" и "3235"
-#Исходящие True
+#Р’С‹РїРѕР»РЅСЏРµС‚ РІСЃРµ (РЅР°РїСЂРёРјРµСЂ 100С€С‚) СѓСЂР°РІРЅРµРЅРёСЏ (РЅР°РїСЂРёРјРµСЂ РёР· С„Р°Р№Р»Р° data1.txt) Рё РµСЃР»Рё РІСЃРµ СѓСЂР°РІРЅРµРЅРёСЏ СЂРµС€РµРЅС‹ РІРµСЂРЅРѕ, С‚Рѕ РІРѕР·РІСЂР°С‰Р°РµС‚ True
+#РўРѕ, С‡С‚Рѕ С„СѓРЅРєС†РёСЏ calc() СЂРµС€РёР»Р° СѓСЂР°РІРЅРµРЅРёРµ РІРµСЂРЅРѕ, РЅРµ РѕР·РЅР°С‡Р°РµС‚ С‡С‚Рѕ СЌС‚Рѕ РёСЃРєРѕРјРѕРµ СѓСЂР°РІРЅРµРЅРёРµ.
+#Р•СЃР»Рё calc() РІРµСЂРЅСѓР»Р° True, С‚Рѕ Р·Р°РїСѓСЃРєР°РµРј С„СѓРЅРєС†РёСЋ calc_all(), РіРґРµ РїСЂРѕРІРµСЂСЏРµРј СѓСЂР°РІРЅРµРЅРёРµ РЅР° Р±РѕР»СЊС€РѕРј РєРѕР»РёС‡РµСЃС‚РІРµ РґР°РЅРЅС‹С…
+#РџСЂРёРјРµСЂ РІС…РѕРґСЏС‰РёС… РґР°РЅРЅС‹С…: РјР°СЃСЃРёРІ "51 * 62 + 73" Рё "3235"
+#РСЃС…РѕРґСЏС‰РёРµ True
 def calc_all(equation, dataset):
 	for dataset_item in dataset:
 		equation_format = format(equation, dataset_item['x'])
@@ -59,7 +58,7 @@ def calc_all(equation, dataset):
 	return True
 			
 		
-#Проверяет число по allow соседней, стоящих друг с другом 
+#РџСЂРѕРІРµСЂСЏРµС‚ С‡РёСЃР»Рѕ РїРѕ allow СЃРѕСЃРµРґРЅРµР№, СЃС‚РѕСЏС‰РёС… РґСЂСѓРі СЃ РґСЂСѓРіРѕРј
 def check_allow_concat(equation):
 	for key, e in enumerate(equation):
 		if key == 0:
@@ -75,25 +74,25 @@ def check_allow_concat(equation):
 			return {'result': False, 'key': key}
 	return {'result': True, 'key': 0}
 
-#Получает тип элемента
-#Входящие параметры n|8
-#Результат n
-#Не используем регулярки, ибо накладно
+#РџРѕР»СѓС‡Р°РµС‚ С‚РёРї СЌР»РµРјРµРЅС‚Р°
+#Р’С…РѕРґСЏС‰РёРµ РїР°СЂР°РјРµС‚СЂС‹ n|8
+#Р РµР·СѓР»СЊС‚Р°С‚ n
+#РќРµ РёСЃРїРѕР»СЊР·СѓРµРј СЂРµРіСѓР»СЏСЂРєРё, РёР±Рѕ РЅР°РєР»Р°РґРЅРѕ
 def get_type_of_element(element):
 	if not element:
 		return 's'
 	index_of_type = element.rfind('|')
 	return element[0:index_of_type]
 
-#Пишет в лог log.txt (например найденные уравнения)
+#РџРёС€РµС‚ РІ Р»РѕРі log.txt (РЅР°РїСЂРёРјРµСЂ РЅР°Р№РґРµРЅРЅС‹Рµ СѓСЂР°РІРЅРµРЅРёСЏ)
 def writeln(str):
 	myLock.acquire()		
 	with open(config.script_path + "\log.txt", 'a') as the_file:
 		the_file.write(str + "\n")
 	myLock.release()
 
-#Входящие данные [12, 9, 5]
-#Исходящие данные [12, 9, 6]
+#Р’С…РѕРґСЏС‰РёРµ РґР°РЅРЅС‹Рµ [12, 9, 5]
+#РСЃС…РѕРґСЏС‰РёРµ РґР°РЅРЅС‹Рµ [12, 9, 6]
 def equation_number_increment(equation):
 	current_index = len(equation) - 1
 	while (True):
@@ -121,13 +120,13 @@ def equation_number_increment_by_index(equation, current_index):
 			else:
 				for key, number in enumerate(equation):
 					equation[key] = 0
-				print('Проверены уравнения длиной ' + str(len(equation)))
+				print('РџСЂРѕРІРµСЂРµРЅС‹ СѓСЂР°РІРЅРµРЅРёСЏ РґР»РёРЅРѕР№ ' + str(len(equation)))
 				equation = [0] + equation
 				return equation
 
-#Форматирование уравнения в читабельный вид
-#Входящие данные [1, 2, 3]
-#исходящие данные v|x0;o|*;v|x1;o|+;v|x2
+#Р¤РѕСЂРјР°С‚РёСЂРѕРІР°РЅРёРµ СѓСЂР°РІРЅРµРЅРёСЏ РІ С‡РёС‚Р°Р±РµР»СЊРЅС‹Р№ РІРёРґ
+#Р’С…РѕРґСЏС‰РёРµ РґР°РЅРЅС‹Рµ [1, 2, 3]
+#РёСЃС…РѕРґСЏС‰РёРµ РґР°РЅРЅС‹Рµ v|x0;o|*;v|x1;o|+;v|x2
 def format_equation_to_human_view(equation):
 	equation_human = ""
 	for index_of_element in equation:

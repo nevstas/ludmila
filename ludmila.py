@@ -1,4 +1,3 @@
-# -*- coding: windows-1251 -*-
 import os
 import subprocess, time
 from threading import Lock
@@ -17,13 +16,13 @@ myLock = Lock()
 
 def task(dataset):
 	global config
-	first_element_of_dataset = dataset[0] #Берем из большого набора данных (например 100) первый элемент
+	first_element_of_dataset = dataset[0] #Р‘РµСЂРµРј РёР· Р±РѕР»СЊС€РѕРіРѕ РЅР°Р±РѕСЂР° РґР°РЅРЅС‹С… (РЅР°РїСЂРёРјРµСЂ 100) РїРµСЂРІС‹Р№ СЌР»РµРјРµРЅС‚
 	variable_elements = []
 	variable_count = 0
 	for f in first_element_of_dataset['x']:
 		variable_elements.append("v|x" + str(variable_count))
 		variable_count = variable_count + 1
-	config.elements = config.elements + variable_elements #добавляем к элементам все 'x', их может быть разное количество
+	config.elements = config.elements + variable_elements #РґРѕР±Р°РІР»СЏРµРј Рє СЌР»РµРјРµРЅС‚Р°Рј РІСЃРµ 'x', РёС… РјРѕР¶РµС‚ Р±С‹С‚СЊ СЂР°Р·РЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ
 	
 	config.elements_len = len(config.elements)
 
@@ -32,31 +31,31 @@ def task(dataset):
 	time_total_start = time.time()
 	while (True):
 
-		equation_format = core.format(equation, first_element_of_dataset['x']) #форматируем уравнение
+		equation_format = core.format(equation, first_element_of_dataset['x']) #С„РѕСЂРјР°С‚РёСЂСѓРµРј СѓСЂР°РІРЅРµРЅРёРµ
 
 		#print(core.format_equation_to_human_view(equation))
 		# core.writeln(core.format_equation_to_human_view(equation))
 
-		if core.calc(equation_format, first_element_of_dataset['y']): #если уравнение выполнено на одном наборе данных x и y
+		if core.calc(equation_format, first_element_of_dataset['y']): #РµСЃР»Рё СѓСЂР°РІРЅРµРЅРёРµ РІС‹РїРѕР»РЅРµРЅРѕ РЅР° РѕРґРЅРѕРј РЅР°Р±РѕСЂРµ РґР°РЅРЅС‹С… x Рё y
 			
-			if core.calc_all(equation, dataset): #тогда выполняем проверку уравнения на большом наборе данных (например 100)
+			if core.calc_all(equation, dataset): #С‚РѕРіРґР° РІС‹РїРѕР»РЅСЏРµРј РїСЂРѕРІРµСЂРєСѓ СѓСЂР°РІРЅРµРЅРёСЏ РЅР° Р±РѕР»СЊС€РѕРј РЅР°Р±РѕСЂРµ РґР°РЅРЅС‹С… (РЅР°РїСЂРёРјРµСЂ 100)
 				time_total = time.time() - time_total_start
-				message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(round(time_total, 2)) + " сек"
+				message = time.strftime("%d.%m.%Y %H:%M:%S") + " Р РµС€РµРЅРёРµ data" + str(config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " РЅР° " + str(round(time_total, 2)) + " СЃРµРє"
 				core.writeln(message)
 				print(message)
 				
 		equation = core.equation_number_increment(equation)
 
 with open(config.script_path + "\\datasets\\" + config.dataset_filename) as f:
-	dataset_plain = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
+	dataset_plain = f.readlines() #СЃС‡РёС‚С‹РІР°РµРј РЅР°Р±РѕСЂ РґР°РЅРЅС‹С… (РЅР°РїСЂРёРјРµСЂ РёР· С„Р°Р№Р»Р° data1.txt). РџСЂРёРјРµСЂ РґР°РЅРЅС‹С… "3235	51	62	73"
 
-dataset = [] #dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
+dataset = [] #dataset СЃРѕРґРµСЂР¶РёС‚ СЌР»РµРјРµРЅС‚С‹ РІРёРґР° {'y': 3235, 'x': [51, 62, 73]} РџРµСЂРІС‹Р№ СЌР»РµРјРµРЅС‚ Р·РЅР°С‡РµРЅРёРµ (СЂРµС€РµРЅРёРµ) СѓСЂР°РІРЅРµРЅРёСЏ y, РІС‚РѕСЂРѕР№ СЌР»РµРјРµРЅС‚ РјР°СЃСЃРёРІ РІС…РѕРґСЏС‰РёС… РґР°РЅРЅС‹С… x
 for dataset_plain_item in dataset_plain:
 	dataset_plain_item = dataset_plain_item.strip()
 	dataset_plain_item = dataset_plain_item.split("\t")
 	y = dataset_plain_item[0]
-	dataset_plain_item.pop(0) # Удаляем первый элемент массива (y), он нам не нужен
+	dataset_plain_item.pop(0) # РЈРґР°Р»СЏРµРј РїРµСЂРІС‹Р№ СЌР»РµРјРµРЅС‚ РјР°СЃСЃРёРІР° (y), РѕРЅ РЅР°Рј РЅРµ РЅСѓР¶РµРЅ
 	x = dataset_plain_item
 	dataset.append({"y": y, "x": x})
 
-task(dataset) #вызываем основноую функцию
+task(dataset) #РІС‹Р·С‹РІР°РµРј РѕСЃРЅРѕРІРЅРѕСѓСЋ С„СѓРЅРєС†РёСЋ
