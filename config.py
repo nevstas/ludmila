@@ -24,11 +24,12 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 # 3 р€д простых чисел
 
 
-data_id = 2
+dataset_id = 1
 
-#»м€ файла с 'x' и 'y', например если data_id = 1, то data_filename будет 'data1.txt'
-data_filename = "data" + str(data_id) + ".txt"
+#»м€ файла с 'x' и 'y', например если dataset_id = 1, то dataset_filename будет 'data1.txt'
+dataset_filename = "data" + str(dataset_id) + ".txt"
 
+#“екущее уравнение с которого начинаем, далее оно будет инкрементитс€
 equation = [0]
 
 #элементы, из которых составл€ютс€ уравнени€ путем конкатенции друг с другом
@@ -71,7 +72,7 @@ elements_len = len(elements)
 #≈сли слева символ иного типа, то конкатенци€ не происходит
 #Ёто сделано дл€ уменьшени€ кол-ва вариантов при комбинаторике, уменьшени€ кол-ва ненужных итераций
 
-types = {
+types_of_elements = {
 	#start начало строки
 	's': {
 		'allow_left': [],

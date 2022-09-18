@@ -15,16 +15,15 @@ import core
 
 myLock = Lock()
 
-
-def task(new_arr):
+def task(dataset):
 	global config
-	first = new_arr[0] #Берем из большого набора данных (например 100) первый элемент
-	new_first_x = []
-	fcount = 0
-	for f in first['x']:
-		new_first_x.append("v|x" + str(fcount))
-		fcount = fcount + 1
-	config.elements = config.elements + new_first_x #добавляем к элементам все 'x', их может быть разное количество
+	first_element_of_dataset = dataset[0] #Берем из большого набора данных (например 100) первый элемент
+	variable_elements = []
+	variable_count = 0
+	for f in first_element_of_dataset['x']:
+		variable_elements.append("v|x" + str(variable_count))
+		variable_count = variable_count + 1
+	config.elements = config.elements + variable_elements #добавляем к элементам все 'x', их может быть разное количество
 	
 	config.elements_len = len(config.elements)
 
@@ -33,30 +32,31 @@ def task(new_arr):
 	time_total_start = time.time()
 	while (True):
 
-		equation_format = core.format(equation, first['x']) #форматируем уравнение
+		equation_format = core.format(equation, first_element_of_dataset['x']) #форматируем уравнение
 
-		#print(core.format_human(equation))
-		# core.writeln(core.format_human(equation))
+		#print(core.format_equation_to_human_view(equation))
+		# core.writeln(core.format_equation_to_human_view(equation))
 
-		if core.calc(equation_format, first['y']): #если уравнение выполнено на одном наборе данных x и y
+		if core.calc(equation_format, first_element_of_dataset['y']): #если уравнение выполнено на одном наборе данных x и y
 			
-			if core.calc_all(equation, new_arr): #тогда выполняем проверку уравнения на большом наборе данных (например 100)
+			if core.calc_all(equation, dataset): #тогда выполняем проверку уравнения на большом наборе данных (например 100)
 				time_total = time.time() - time_total_start
-				core.writeln(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.data_id) + ": " + core.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
-				print(time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.data_id) + ": " + core.format_human(equation) + " на " + str(round(time_total, 2)) + " сек")
+				message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(round(time_total, 2)) + " сек"
+				core.writeln(message)
+				print(message)
 				
 		equation = core.equation_number_increment(equation)
 
-with open(config.script_path + "\\datasets\\" + config.data_filename) as f:
-	arr = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
+with open(config.script_path + "\\datasets\\" + config.dataset_filename) as f:
+	dataset_plain = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
 
-new_arr = [] #В конце цикла массив new_arr должен содержать элементы вида [3235, [51, 62, 73]] Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
-for arr_item in arr:
-	arr_item = arr_item.strip()
-	arr_item = arr_item.split("\t")
-	y = arr_item[0]
-	arr_item.pop(0) # Удаляем первый элемент массива (y), он нам не нужен
-	x = arr_item
-	new_arr.append({"y": y, "x": x})
+dataset = [] #dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
+for dataset_plain_item in dataset_plain:
+	dataset_plain_item = dataset_plain_item.strip()
+	dataset_plain_item = dataset_plain_item.split("\t")
+	y = dataset_plain_item[0]
+	dataset_plain_item.pop(0) # Удаляем первый элемент массива (y), он нам не нужен
+	x = dataset_plain_item
+	dataset.append({"y": y, "x": x})
 
-task(new_arr) #вызываем основноую функцию
+task(dataset) #вызываем основноую функцию

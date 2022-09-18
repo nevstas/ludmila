@@ -20,10 +20,10 @@ myLock = Lock()
 def format(equation, x):
 	equation = ''.join([config.elements[i] for i in equation])
 
-	x_count = 0
+	variable_count = 0
 	for x_item in x:
-		equation = equation.replace("v|x" + str(x_count), x_item)  
-		x_count = x_count + 1
+		equation = equation.replace("v|x" + str(variable_count), x_item)
+		variable_count = variable_count + 1
 	equation = equation.replace("n|", "")
 	equation = equation.replace("o|", "")
 	equation = equation.replace("om|", "")
@@ -39,11 +39,11 @@ def format(equation, x):
 def calc(equation, y):
 	try:
 		with warnings.catch_warnings():
-			warnings.simplefilter("ignore") #Отключаем Warning на сулчай если в equation будет "4(3)"
-			y_equation = eval(equation)
-		if float(y_equation) == float(y):
+			warnings.simplefilter("ignore") #Отключаем Warning на сулчай если в equation будет не вылидным, например "4(3)"
+			result_of_equation = eval(equation)
+		if float(result_of_equation) == float(y):
 			return True
-	except:			
+	except:
 		return False
 
 #Выполняет все (например 100шт) уравнения (например из файла data1.txt) и если все уравнения решены верно, то возвращает True
@@ -51,10 +51,10 @@ def calc(equation, y):
 #Если calc() вернула True, то запускаем функцию calc_all(), где проверяем уравнение на большом количестве данных
 #Пример входящих данных: массив "51 * 62 + 73" и "3235"
 #Исходящие True
-def calc_all(equation, new_arr):
-	for new_arr_item in new_arr:
-		equation_format = format(equation, new_arr_item['x'])
-		if not calc(equation_format, new_arr_item['y']):
+def calc_all(equation, dataset):
+	for dataset_item in dataset:
+		equation_format = format(equation, dataset_item['x'])
+		if not calc(equation_format, dataset_item['y']):
 			return False
 	return True
 			
@@ -64,14 +64,14 @@ def check_allow_concat(equation):
 	for key, e in enumerate(equation):
 		if key == 0:
 			left_element = ''
-			left_element_type = get_type(left_element)
+			left_element_type = get_type_of_element(left_element)
 		else:
 			left_element = equation[key - 1]
-			left_element_type = get_type(config.elements[left_element])
+			left_element_type = get_type_of_element(config.elements[left_element])
 		right_element = e
-		right_element_type = get_type(config.elements[right_element])
+		right_element_type = get_type_of_element(config.elements[right_element])
 
-		if not left_element_type in config.types[right_element_type]['allow_left']:
+		if not left_element_type in config.types_of_elements[right_element_type]['allow_left']:
 			return {'result': False, 'key': key}
 	return {'result': True, 'key': 0}
 
@@ -79,11 +79,11 @@ def check_allow_concat(equation):
 #Входящие параметры n|8
 #Результат n
 #Не используем регулярки, ибо накладно
-def get_type(equation):
-	if not equation:
+def get_type_of_element(element):
+	if not element:
 		return 's'
-	end = equation.rfind('|')
-	return equation[0:end]
+	index_of_type = element.rfind('|')
+	return element[0:index_of_type]
 
 #Пишет в лог log.txt (например найденные уравнения)
 def writeln(str):
@@ -128,11 +128,11 @@ def equation_number_increment_by_index(equation, current_index):
 #Форматирование уравнения в читабельный вид
 #Входящие данные [1, 2, 3]
 #исходящие данные v|x0;o|*;v|x1;o|+;v|x2
-def format_human(equation):
+def format_equation_to_human_view(equation):
 	equation_human = ""
-	for e in equation:
+	for index_of_element in equation:
 		if equation_human == "":
-			equation_human = config.elements[e]
+			equation_human = config.elements[index_of_element]
 		else:
-			equation_human = equation_human + ';' + config.elements[e]
+			equation_human = equation_human + ';' + config.elements[index_of_element]
 	return equation_human
