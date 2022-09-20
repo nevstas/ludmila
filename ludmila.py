@@ -46,4 +46,5 @@ for dataset_plain_item in dataset_plain:
 	x = dataset_plain_item
 	dataset.append({"y": y, "x": x})
 
-task(dataset) #вызываем основноую функцию
+#task(dataset) #вызываем основноую функцию
+print(core.decimal_to_custom(24))
