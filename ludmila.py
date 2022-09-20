@@ -1,9 +1,10 @@
 import time
 from threading import Lock
+import threading
 import core
 import config
 
-myLock = Lock()
+myLock = threading.Lock()
 
 def task(dataset):
 	first_element_of_dataset = dataset[0] #Берем из большого набора данных (например 100) первый элемент
@@ -33,7 +34,7 @@ def task(dataset):
 				
 		equation = core.equation_number_increment(equation)
 
-with open(config.script_path + "\\datasets\\" + config.dataset_filename) as f:
+with open(config.script_path + "/datasets/" + config.dataset_filename) as f:
 	dataset_plain = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
 
 dataset = [] #dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x

@@ -30,6 +30,8 @@ def calc(equation, y):
 			result_of_equation = eval(equation)
 		if float(result_of_equation) == float(y):
 			return True
+		else:
+			return False
 	except:
 		return False
 
@@ -75,7 +77,7 @@ def get_type_of_element(element):
 #Пишет в лог log.txt (например найденные уравнения)
 def writeln(str):
 	myLock.acquire()		
-	with open(config.script_path + "\log.txt", 'a') as the_file:
+	with open(config.script_path + "/log.txt", 'a') as the_file:
 		the_file.write(str + "\n")
 	myLock.release()
 
@@ -123,3 +125,14 @@ def format_equation_to_human_view(equation):
 		else:
 			equation_human = equation_human + ';' + config.elements[index_of_element]
 	return equation_human
+
+#Ковертирует число десятичной системы счисления в число elements_len системы счисления (например 21)
+#Входящие данные 24
+#исходящие данные [1, 3]
+def decimal_to_custom(number):
+	x = (number % config.elements_len)
+	ch = [x]
+	if (number - x != 0):
+		return decimal_to_custom(number // config.elements_len) + ch
+	else:
+		return ch
