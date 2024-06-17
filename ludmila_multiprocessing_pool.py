@@ -68,6 +68,7 @@ equation = config.equation
 
 num_threads = 1
 if __name__ == '__main__':
+
 	p = Pool()
 	results = p.imap(task, a, chunksize=10000)
 	p.close()

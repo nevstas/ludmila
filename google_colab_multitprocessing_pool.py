@@ -260,29 +260,24 @@ def get_data():
         yield equation
 
 a=get_data()
-def task(i, q):
-    global elements
-    global elements_len
-    global equation
-    while True:
-        equation = next(a)
+def task(equation):
 
-        equation_format = format(equation, first_element_of_dataset['x'])  # форматируем уравнение
+    equation_format = format(equation, first_element_of_dataset['x'])  # форматируем уравнение
 
-        # print(format_equation_to_human_view(equation))
-        # writeln(format_equation_to_human_view(equation))
+    # print(format_equation_to_human_view(equation))
+    # writeln(format_equation_to_human_view(equation))
 
-        if calc(equation_format,
-                first_element_of_dataset['y']):  # если уравнение выполнено на одном наборе данных x и y
+    if calc(equation_format,
+            first_element_of_dataset['y']):  # если уравнение выполнено на одном наборе данных x и y
 
-            if calc_all(equation,
-                        dataset):  # тогда выполняем проверку уравнения на большом наборе данных (например 100)
-                time_total = time.time() - time_total_start
-                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
-                    dataset_id) + ": " + format_equation_to_human_view(equation) + " на " + str(
-                    round(time_total, 2)) + " сек"
-                writeln(message)
-                print(message)
+        if calc_all(equation,
+                    dataset):  # тогда выполняем проверку уравнения на большом наборе данных (например 100)
+            time_total = time.time() - time_total_start
+            message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
+                dataset_id) + ": " + format_equation_to_human_view(equation) + " на " + str(
+                round(time_total, 2)) + " сек"
+            writeln(message)
+            print(message)
 
 with open(script_path + "/datasets/" + dataset_filename) as f:
     dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235    51    62    73"
@@ -304,9 +299,10 @@ elements = elements + variable_elements  # добавляем к элемент�
 elements_len = len(elements)
 
 
-num_threads = 5
+num_threads = 10
+if __name__ == '__main__':
 
-for i in range(num_threads):
-    worker = mp.Process(target=task, args=(i, queue))
-    worker.start()
-    # worker.join()
+	p = Pool()
+	results = p.imap(task, a, chunksize=10000)
+	p.close()
+	p.join()
