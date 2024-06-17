@@ -1,15 +1,25 @@
 import warnings
 import os
 import sys
-from threading import Lock
 import threading
 import time
+from threading import Thread
+from threading import Lock
+import time
+import requests
+import os
+import threading
+import queue
+from queue import Queue
 
 import numpy as np
 from timeit import default_timer as timer
 from numba import vectorize
 
+queue = Queue()
 myLock = threading.Lock()
+myLock2 = threading.Lock()
+time_total_start = time.time()
 
 # Путь к располажению выполняемого скрипта
 script_path = "/content/drive/My Drive/ludmila/ludmila"
@@ -239,20 +249,19 @@ def format_equation_to_human_view(equation):
             equation_human = equation_human + ';' + elements[index_of_element]
     return equation_human
 
+def get_data():
+    global equation
+    while (True):
+        equation = equation_number_increment(equation)
+        yield equation
 
-def task(dataset):
+a=get_data()
+def task(i, q):
     global elements
     global elements_len
     global equation
-    first_element_of_dataset = dataset[0]  # Берем из большого набора данных (например 100) первый элемент
-    variable_elements = []
-    for variable_count, f in enumerate(first_element_of_dataset['x']):
-        variable_elements.append("v|x" + str(variable_count))
-    elements = elements + variable_elements  # добавляем к элементам все 'x', их может быть разное количество
-    elements_len = len(elements)
-
-    time_total_start = time.time()
-    while (True):
+    while True:
+        equation = q.get()
 
         equation_format = format(equation, first_element_of_dataset['x'])  # форматируем уравнение
 
@@ -270,12 +279,19 @@ def task(dataset):
                     round(time_total, 2)) + " сек"
                 writeln(message)
                 print(message)
-
-        equation = equation_number_increment(equation)
-
+        c = ''
+        try:
+            myLock2.acquire()
+            c = next(a)
+            myLock2.release()
+        except:
+            pass
+        if c != '':
+            queue.put(c)
+        q.task_done()
 
 with open(script_path + "/datasets/" + dataset_filename) as f:
-    dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
+    dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235    51    62    73"
 
 dataset = []  # dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
 for dataset_plain_item in dataset_plain:
@@ -286,4 +302,20 @@ for dataset_plain_item in dataset_plain:
     x = dataset_plain_item
     dataset.append({"y": y, "x": x})
 
-task(dataset)  # вызываем основноую функцию
+first_element_of_dataset = dataset[0]  # Берем из большого набора данных (например 100) первый элемент
+variable_elements = []
+for variable_count, f in enumerate(first_element_of_dataset['x']):
+    variable_elements.append("v|x" + str(variable_count))
+elements = elements + variable_elements  # добавляем к элементам все 'x', их может быть разное количество
+elements_len = len(elements)
+
+num_threads = 100
+for i in range(num_threads):
+    myLock2.acquire()
+    queue.put(next(a))
+    myLock2.release()
+    worker = Thread(target=task, args=(i, queue))
+    worker.daemon = True
+    worker.start()
+
+queue.join()

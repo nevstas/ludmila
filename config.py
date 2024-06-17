@@ -2,7 +2,7 @@ import os
 import sys
 
 #Путь к папке выполняемого скрипта
-script_path = "e:\python\maths"
+script_path = "d:\python\maths"
 
 # 1 Линейное 5 символов
 # y = ax + b
