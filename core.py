@@ -75,11 +75,12 @@ def get_type_of_element(element):
 	return element[0:index_of_type]
 
 #Пишет в лог log.txt (например найденные уравнения)
+the_file = open(config.script_path + "/log.txt", 'a')
 def writeln(str):
-	myLock.acquire()		
-	with open(config.script_path + "/log.txt", 'a') as the_file:
-		the_file.write(str + "\n")
-	myLock.release()
+    myLock.acquire()
+    the_file.write(str + "\n")
+    the_file.flush()  # Немедленно записать данные на диск
+    myLock.release()
 
 #Входящие данные [12, 9, 5]
 #Исходящие данные [12, 9, 6]
@@ -136,3 +137,9 @@ def decimal_to_custom(number):
 		return decimal_to_custom(number // config.elements_len) + ch
 	else:
 		return ch
+
+def custom_to_decimal(arr):
+    decimal = 0
+    for index, number in enumerate(reversed(arr)):
+        decimal += number * (config.elements_len ** index)
+    return decimal

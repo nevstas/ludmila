@@ -25,13 +25,13 @@ def task(dataset):
 		# core.writeln(core.format_equation_to_human_view(equation))
 
 		if core.calc(equation_format, first_element_of_dataset['y']): #если уравнение выполнено на одном наборе данных x и y
-			
+
 			if core.calc_all(equation, dataset): #тогда выполняем проверку уравнения на большом наборе данных (например 100)
 				time_total = time.time() - time_total_start
 				message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(round(time_total, 2)) + " сек"
 				core.writeln(message)
 				print(message)
-				
+
 		equation = core.equation_number_increment(equation)
 
 with open(config.script_path + "/datasets/" + config.dataset_filename) as f:

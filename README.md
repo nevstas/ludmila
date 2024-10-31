@@ -67,7 +67,7 @@ y = x0 * x1 + x2
 Но не все они могут быть представлены в виде наборов данных.
 
 ## To Do
-- Переделать, чтобы вычисления производились не на CPU, а на GPU (CUDA).
+- Переделать, на multiprocessing, чтобы использовались все ядра CPU.
 - Добавить больше математических операций - sin, cos, tg, ctg, π, e, log (упадет производительность, но увеличится вероятность нахождения формулы).
 - Добавить наборы данных для других нерешенных математических задач. 
 
@@ -97,3 +97,8 @@ c:\Python37\python e:\python\maths\ludmila.py
 - [alexlarin.com](https://alexlarin.com/viewtopic.php?f=4&t=17347)
 - [math10.com](https://www.math10.com/ru/forum/viewtopic.php?f=42&t=3185)
 - [math.hashcode.ru](http://math.hashcode.ru/questions/226775/python-ludmila-%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BD%D0%B5%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%BD%D1%8B%D1%85-%D0%BC%D0%B0%D1%82%D0%B5%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D1%85-%D0%B7%D0%B0%D0%B4%D0%B0%D1%87-%D0%BC%D0%B5%D1%82%D0%BE%D0%B4%D0%BE%D0%BC-%D0%BF%D0%BE%D0%B4%D0%B1%D0%BE%D1%80%D0%B0)
+
+## Полезные ссылки
+
+- [BOINC](https://ru.wikipedia.org/wiki/BOINC)
+- [Добровольные вычисления](https://ru.wikipedia.org/wiki/%D0%94%D0%BE%D0%B1%D1%80%D0%BE%D0%B2%D0%BE%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5_%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F)

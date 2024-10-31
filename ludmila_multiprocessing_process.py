@@ -1,76 +1,84 @@
 import time
+from threading import Lock
+import threading
 import core
 import config
-from threading import Thread
-from threading import Lock
-import time
-import requests
-import os
-import threading
-import queue
-from queue import Queue
-import multiprocessing as mp
-from multiprocessing import JoinableQueue
-from multiprocessing import Pool
+import multiprocessing
 import json
-
-queue = mp.Queue()
-# queue = JoinableQueue
-
+import atexit
 
 myLock = threading.Lock()
-myLock2 = Lock()
 time_total_start = time.time()
 
-def get_data():
-	global equation
-	while (True):
-		equation = core.equation_number_increment(equation)
-		yield equation
+task_position = 0
 
-a=get_data()
+@atexit.register
+def cleanup():
+    core.the_file.close()
 
-def task(i, q):
+def get_task():
+	global equation_decimal_start
+	global chunk
+	global task_position
+	position_decimal_start = equation_decimal_start + task_position * chunk
+	position_decimal_end = position_decimal_start + chunk
+
+	position_start = core.decimal_to_custom(position_decimal_start)
+	position_end = core.decimal_to_custom(position_decimal_end)
+
+	task_position += 1
+	return [position_start, position_end, position_decimal_start, position_decimal_end]
+
+def task(position_start, position_end, position_decimal_start, position_decimal_end):
+	# core.writeln(json.dumps(position_start) + ' ' + json.dumps(position_end))
+	equation = position_start.copy()
 	while True:
-		equation = next(a)
-		equation_format = core.format(equation, first_element_of_dataset['x'])  # форматируем уравнение
-		if core.calc(equation_format,
-					 first_element_of_dataset['y']):  # если уравнение выполнено на одном наборе данных x и y
-			if core.calc_all(equation,
-							 dataset):  # тогда выполняем проверку уравнения на большом наборе данных (например 100)
+		equation_format = core.format(equation, first_element_of_dataset['x'])
+
+		if core.calc(equation_format, first_element_of_dataset['y']):
+			if core.calc_all(equation, dataset):
 				time_total = time.time() - time_total_start
-				message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
-					config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(
-					round(time_total, 2)) + " сек"
+				message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(round(time_total, 2)) + " сек"
 				core.writeln(message)
 				print(message)
-		# core.writeln('xzcxzccxzzxcc')
+
+		equation = core.equation_number_increment(equation)
+		equation_decimal = core.custom_to_decimal(equation)
+
+		if equation_decimal >= position_decimal_end:
+			# core.writeln('End: ' + json.dumps(position_start) + ' ' + json.dumps(position_end))
+			break
 
 with open(config.script_path + "/datasets/" + config.dataset_filename) as f:
-	dataset_plain = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
+	dataset_plain = f.readlines()
 
-dataset = [] #dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
+dataset = []
 for dataset_plain_item in dataset_plain:
 	dataset_plain_item = dataset_plain_item.strip()
 	dataset_plain_item = dataset_plain_item.split("\t")
 	y = dataset_plain_item[0]
-	dataset_plain_item.pop(0) # Удаляем первый элемент массива (y), он нам не нужен
+	dataset_plain_item.pop(0)
 	x = dataset_plain_item
 	dataset.append({"y": y, "x": x})
-first_element_of_dataset = dataset[0] #Берем из большого набора данных (например 100) первый элемент
+
+first_element_of_dataset = dataset[0]
 variable_elements = []
 for variable_count, f in enumerate(first_element_of_dataset['x']):
 	variable_elements.append("v|x" + str(variable_count))
-config.elements = config.elements + variable_elements #добавляем к элементам все 'x', их может быть разное количество
+config.elements = config.elements + variable_elements
 config.elements_len = len(config.elements)
 
-equation = config.equation
+chunk = 10000
+equation_start = config.equation
+equation_decimal_start = core.custom_to_decimal(equation_start)
 
-num_threads = 5
 if __name__ == '__main__':
-	for i in range(num_threads):
-		worker = mp.Process(target=task, args=(i, queue))
-		worker.start()
-		# worker.join()
+	with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+	# with multiprocessing.Pool(processes=8) as pool:
+		while True:
+			task_data = get_task()
+			pool.apply_async(task, args=(task_data[0], task_data[1], task_data[2], task_data[3]))
 
+		pool.close()
+		pool.join()
 #c:\Python311\python d:\python\maths\ludmila_multiprocessing_process.py
