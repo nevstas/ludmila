@@ -14,7 +14,7 @@ task_position = 0
 
 @atexit.register
 def cleanup():
-    core.the_file.close()
+	core.the_file.close()
 
 def get_task():
 	global equation_decimal_start
@@ -73,12 +73,12 @@ equation_start = config.equation
 equation_decimal_start = core.custom_to_decimal(equation_start)
 
 if __name__ == '__main__':
-	with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-	# with multiprocessing.Pool(processes=8) as pool:
+	def run_tasks(pool):
 		while True:
 			task_data = get_task()
 			pool.apply_async(task, args=(task_data[0], task_data[1], task_data[2], task_data[3]))
 
-		pool.close()
-		pool.join()
+	# Создаем пул и запускаем задачи
+	with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+		run_tasks(pool)
 #c:\Python311\python d:\python\maths\ludmila_multiprocessing_process.py

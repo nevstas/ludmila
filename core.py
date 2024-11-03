@@ -77,10 +77,10 @@ def get_type_of_element(element):
 #Пишет в лог log.txt (например найденные уравнения)
 the_file = open(config.script_path + "/log.txt", 'a')
 def writeln(str):
-    myLock.acquire()
-    the_file.write(str + "\n")
-    the_file.flush()  # Немедленно записать данные на диск
-    myLock.release()
+    with myLock:
+        with open(config.script_path + "/log.txt", 'a') as the_file:
+            the_file.write(str + "\n")
+            the_file.flush()
 
 #Входящие данные [12, 9, 5]
 #Исходящие данные [12, 9, 6]
