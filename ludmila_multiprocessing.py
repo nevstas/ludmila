@@ -81,4 +81,4 @@ if __name__ == '__main__':
 	# Создаем пул и запускаем задачи
 	with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
 		run_tasks(pool)
-#c:\Python311\python d:\python\maths\ludmila_multiprocessing_process.py
+#c:\Python311\python d:\python\maths\ludmila_multiprocessing.py
