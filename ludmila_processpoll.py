@@ -9,12 +9,15 @@ import atexit
 import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+# logger = multiprocessing.log_to_stderr()
+# logger.setLevel(multiprocessing.SUBDEBUG)
+
 @atexit.register
 def cleanup():
 	core.the_file.close()
 
 def get_tasks(fnc_num_tasks, fnc_equation_decimal_start, fnc_task_position, fnc_chunk):
-    print('get tasks')
+    # print('get tasks')
     # Создаем несколько задач для одновременной обработки
     tasks = []
     for _ in range(fnc_num_tasks):
@@ -25,45 +28,33 @@ def get_tasks(fnc_num_tasks, fnc_equation_decimal_start, fnc_task_position, fnc_
         position_end = core.decimal_to_custom(position_decimal_end)
 
         fnc_task_position += 1
-        tasks.append([position_start, position_end, position_decimal_start, position_decimal_end])
+        tasks.append([position_start.copy(), position_end.copy(), position_decimal_start, position_decimal_end])
     return [fnc_task_position, tasks]
 
 def task(fnc_variable_elements, fnc_time_total_start, fnc_dataset, fnc_first_element_of_dataset, fnc_position_start, fnc_position_end, fnc_position_decimal_start, fnc_position_decimal_end):
     # Выполнение задачи (например, печать начала позиции)
-
-    config.elements = config.elements + fnc_variable_elements
-    config.elements_len = len(config.elements)
-
-    # total = 0
-    # for i in range(10 ** 7):
-    #     total += i % 10
-    # return total
+    if not fnc_variable_elements[0] in config.elements:
+        config.elements = config.elements + fnc_variable_elements
+        config.elements_len = len(config.elements)
 
     equation = fnc_position_start.copy()
-
     while True:
         equation_format = core.format(equation, fnc_first_element_of_dataset['x'])
 
-        if equation_format == '51*62+73':
-            print(12345)
-
-
-            # if core.calc(equation_format, fnc_first_element_of_dataset['y']):
-            #     print(777777777)
-                # if core.calc_all(equation, fnc_dataset):
-                #     print(88888888888888888)
-                    # time_total = time.time() - fnc_time_total_start
-                    # message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
-                    #     config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(
-                    #     round(time_total, 2)) + " сек"
-                    # core.writeln(message)
-                    # print(message)
+        if core.calc(equation_format, fnc_first_element_of_dataset['y']):
+            if core.calc_all(equation, fnc_dataset):
+                time_total = time.time() - fnc_time_total_start
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
+                    config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(
+                    round(time_total, 2)) + " сек"
+                core.writeln(message)
+                print(message)
 
         equation = core.equation_number_increment(equation)
         equation_decimal = core.custom_to_decimal(equation)
 
         if equation_decimal >= fnc_position_decimal_end:
-            print("task was finished")
+            # print("task was finished")
             return
 
 if __name__ == '__main__':
@@ -86,15 +77,15 @@ if __name__ == '__main__':
     variable_elements = []
     for variable_count, f in enumerate(first_element_of_dataset['x']):
         variable_elements.append("v|x" + str(variable_count))
+    config.elements = config.elements + variable_elements
+    config.elements_len = len(config.elements)
 
-    chunk = 100000000
+    chunk = 100000
     equation_start = config.equation
     equation_decimal_start = core.custom_to_decimal(equation_start)
-    # equation_decimal_start = 1800000 #remove
 
-    # Используем ProcessPoolExecutor для управления процессами
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
-    # with ProcessPoolExecutor(max_workers=2) as executor:
+    # with ProcessPoolExecutor(max_workers=1) as executor:
         futures = []
 
         try:
