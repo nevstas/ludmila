@@ -11,16 +11,30 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import Process
 import signal
 from contextlib import contextmanager
+import random
 
 # logger = multiprocessing.log_to_stderr()
 # logger.setLevel(multiprocessing.SUBDEBUG)
+
+class TimeoutException(Exception): pass
+
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
 
 @atexit.register
 def cleanup():
 	core.the_file.close()
 
 def get_tasks(fnc_num_tasks, fnc_equation_decimal_start, fnc_task_position, fnc_chunk):
-    # print('get tasks')
+    # print('get tasks ' + str(random.randint(1, 100)))
     # Создаем несколько задач для одновременной обработки
     tasks = []
     for _ in range(fnc_num_tasks):
@@ -41,12 +55,31 @@ def task(fnc_variable_elements, fnc_time_total_start, fnc_dataset, fnc_first_ele
         config.elements_len = len(config.elements)
 
     # print('task was started')
-    equation = fnc_position_start
+    equation = fnc_position_start.copy()
     while True:
         equation_format = core.format(equation, fnc_first_element_of_dataset['x'])
 
-        if core.calc(equation_format, fnc_first_element_of_dataset['y']):
-            if core.calc_all(equation, fnc_dataset):
+        try:
+            with time_limit(1):
+                calc_result = core.calc(equation_format, fnc_first_element_of_dataset['y'])
+        except TimeoutException as e:
+            calc_result = False
+            print("Timed out!")
+        except Exception as e:
+            calc_result = False
+            print(str(e))
+
+        if calc_result:
+            try:
+                with time_limit(1):
+                    calc_all_result = core.calc_all(equation, fnc_dataset)
+            except TimeoutException as e:
+                calc_all_result = False
+                print("Timed out!")
+            except Exception as e:
+                calc_all_result = False
+                print(str(e))
+            if calc_all_result:
                 time_total = time.time() - fnc_time_total_start
                 message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
                     config.dataset_id) + ": " + core.format_equation_to_human_view(equation) + " на " + str(

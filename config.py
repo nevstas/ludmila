@@ -2,8 +2,7 @@ import os
 import sys
 
 #Путь к папке выполняемого скрипта
-script_path = "d:\python\maths"
-script_path = "/home/nevep/web/nevep.ru/public_html/tmp/ludmila/"
+script_path = os.path.dirname(os.path.realpath(__file__))
 
 # 1 Линейное 5 символов
 # y = ax + b
@@ -58,10 +57,10 @@ elements = [
 	"br|)",
 
 	#степень: 2 степень, 3 степень, корень квадратный, корень кубический
-	# "e|**2",
-	# "e|**3",
-	# "e|**0.5",
-	# "e|**(1/3)",
+	"e|**2",
+	"e|**3",
+	"e|**0.5",
+	"e|**(1/3)",
 ]
 
 elements_len = len(elements)
