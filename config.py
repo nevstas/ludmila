@@ -3,6 +3,7 @@ import sys
 
 #Путь к папке выполняемого скрипта
 script_path = "d:\python\maths"
+script_path = "/home/nevep/web/nevep.ru/public_html/tmp/ludmila/"
 
 # 1 Линейное 5 символов
 # y = ax + b
