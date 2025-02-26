@@ -78,7 +78,7 @@ def get_type_of_element(element):
 the_file = open(config.script_path + "/log.txt", 'a')
 def writeln(str):
     with myLock:
-        with open(config.script_path + "/log.txt", 'a') as the_file:
+        with open(config.script_path + "/log.txt", 'a', encoding='utf-8') as the_file:
             the_file.write(str + "\n")
             the_file.flush()
 

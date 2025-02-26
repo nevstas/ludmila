@@ -17,6 +17,8 @@ def task(dataset):
 	equation = config.equation
 
 	time_total_start = time.time()
+	time_stat = time.time()
+	equation_count = 0
 	while (True):
 
 		equation_format = core.format(equation, first_element_of_dataset['x']) #форматируем уравнение
@@ -33,6 +35,13 @@ def task(dataset):
 				print(message)
 
 		equation = core.equation_number_increment(equation)
+
+		equation_count += 1
+		if time.time() - time_stat >= 5:
+			speed = equation_count / 5
+			print(f"Speed: {int(speed)} eq/s")
+			time_stat = time.time()
+			equation_count = 0
 
 with open(config.script_path + "/datasets/" + config.dataset_filename) as f:
 	dataset_plain = f.readlines() #считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"

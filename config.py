@@ -15,7 +15,7 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 # 3 ряд простых чисел
 
 
-dataset_id = 2
+dataset_id = 1
 
 #Имя файла с 'x' и 'y', например если dataset_id = 1, то dataset_filename будет 'data1.txt'
 dataset_filename = "data" + str(dataset_id) + ".txt"
