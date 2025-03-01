@@ -1,6 +1,10 @@
-import time
+import warnings
+import os
+import sys
 from threading import Lock
 import threading
+import time
+
 import multiprocessing
 import json
 import atexit
@@ -10,17 +14,15 @@ from multiprocessing import Process
 import signal
 from contextlib import contextmanager
 import random
-import os
-import sys
-import warnings
 
-# logger = multiprocessing.log_to_stderr()
-# logger.setLevel(multiprocessing.SUBDEBUG)
+import numpy as np
+from timeit import default_timer as timer
+from numba import vectorize
 
 myLock = threading.Lock()
 
-#Путь к папке выполняемого скрипта
-script_path = os.path.dirname(os.path.realpath(__file__))
+# Путь к располажению выполняемого скрипта
+script_path = "/content/drive/My Drive/ludmila/ludmila"
 
 # 1 Линейное 5 символов
 # y = ax + b
@@ -35,23 +37,15 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 
 dataset_id = 1
 
-#Имя файла с 'x' и 'y', например если dataset_id = 1, то dataset_filename будет 'data1.txt'
+# Имя файла с 'x' и 'y', например если dataset_id = 1, то dataset_filename будет 'data1.txt'
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
-#Текущее уравнение с которого начинаем, далее оно будет инкрементится
+# Текущее уравнение с которого начинаем, далее оно будет инкрементится
 equation = [0]
 
-#элементы, из которых составляются уравнения путем конкатенции друг с другом
-#21-чная система счисления (от 0 до 20)
-#"0" => "n|0", "1" => "n|1", "2" => "n|2", "3" => "n|3", "4" => "n|4", "5" => "n|5"
-#"6" => "n|6", "7" => "n|7", "8" => "n|8", "9" => "n|9", "10" => "n|10"
-#"11" => "o|+", 12" => "o|*", 13" => "o|/", 14" => "om|-"
-#"15" => "bl|(", "16" => "br|)"
-#"17" => "e|**2", "18" => "e|**3", "19" => "e|**0.5", "20" => "e|**(1/3)"
-#"21" => "n|1;n|0"
-#"22" => "n|1;n|1"
+# элементы, из которых составляются уравнения путем конкатенции друг с другом
 elements = [
-    #числа: 0-10
+    # числа: 0-10
     "n|0",
     "n|1",
     "n|2",
@@ -64,17 +58,17 @@ elements = [
     "n|9",
     "n|10",
 
-    #операции: +, -, *, /
+    # операции: +, -, *, /
     "o|+",
     "o|*",
     "o|/",
     "om|-",
 
-    #скобки ( и )
+    # скобки ( и )
     "bl|(",
     "br|)",
 
-    #степень: 2 степень, 3 степень, корень квадратный, корень кубический
+    # степень: 2 степень, 3 степень, корень квадратный, корень кубический
     # "e|**2",
     # "e|**3",
     # "e|**0.5",
@@ -83,66 +77,65 @@ elements = [
 
 elements_len = len(elements)
 
-#Ключи - типы элементов
-#allow_left - правила при конкатенции, содержит типы элементов, которые могут находится слева
-#При конкатенции элемента типа number смотрится на то кто стоит слева, разрешены o(operator), om(operator minus), s(start) и bl(bracket left)
-#Если слева символ иного типа, то конкатенция не происходит
-#Это сделано для уменьшения кол-ва вариантов при комбинаторике, уменьшения кол-ва ненужных итераций
+# Ключи - типы элементов
+# allow_left - правила при конкатенции, содержит типы элементов, которые могут находится слева
+# При конкатенции элемента типа number смотрится на то кто стоит слева, разрешены o(operator), om(operator minus), s(start) и bl(bracket left)
+# Если слева символ иного типа, то конкатенция не происходит
+# Это сделано для уменьшения кол-ва вариантов при комбинаторике, уменьшения кол-ва ненужных итераций
 
 types_of_elements = {
-    #start начало строки
+    # start начало строки
     's': {
         'allow_left': [],
     },
-    #number
+    # number
     'n': {
         'allow_left': ['s', 'o', 'om', 'bl'],
     },
-    #operator
+    # operator
     'o': {
         'allow_left': ['n', 'br', 'v', 'e'],
     },
-    #operator minus
+    # operator minus
     'om': {
         'allow_left': ['s', 'n', 'bl', 'br', 'v', 'e'],
     },
-    #bracket left
+    # bracket left
     'bl': {
         'allow_left': ['s', 'o', 'om', 'e'],
     },
-    #bracket right
+    # bracket right
     'br': {
         'allow_left': ['n', 'v', 'e'],
     },
-    #variable
+    # variable
     'v': {
         'allow_left': ['s', 'o', 'om', 'bl'],
     },
-    #exponentiation
+    # exponentiation
     'e': {
         'allow_left': ['n', 'br', 'v'],
     },
 }
 
 with open(script_path + "/datasets/" + dataset_filename) as f:
-    dataset_plain = f.readlines()
+    dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
 
-dataset = []
+dataset = []  # dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
 for dataset_plain_item in dataset_plain:
     dataset_plain_item = dataset_plain_item.strip()
     dataset_plain_item = dataset_plain_item.split("\t")
     y = dataset_plain_item[0]
-    dataset_plain_item.pop(0)
+    dataset_plain_item.pop(0)  # Удаляем первый элемент массива (y), он нам не нужен
     x = dataset_plain_item
     dataset.append({"y": y, "x": x})
 
-first_element_of_dataset = dataset[0]
+first_element_of_dataset = dataset[0]  # Берем из большого набора данных (например 100) первый элемент
 variable_elements = []
 for variable_count, f in enumerate(first_element_of_dataset['x']):
     variable_elements.append("v|x" + str(variable_count))
-elements = elements + variable_elements
+elements = elements + variable_elements  # добавляем к элементам все 'x', их может быть разное количество
 elements_len = len(elements)
-
 
 # Форматирует уравнения
 # Пример входящих данных: [1, 2, 3]
@@ -220,14 +213,11 @@ def get_type_of_element(element):
 
 
 # Пишет в лог log.txt (например найденные уравнения)
-the_file = open(script_path + "/log.txt", 'a')
-
-
 def writeln(str):
-    with myLock:
-        with open(script_path + "/log.txt", 'a', encoding='utf-8') as the_file:
-            the_file.write(str + "\n")
-            the_file.flush()
+    myLock.acquire()
+    with open(script_path + "/log.txt", 'a', encoding='utf-8') as the_file:
+        the_file.write(str + "\n")
+    myLock.release()
 
 
 # Входящие данные [12, 9, 5]
@@ -375,6 +365,4 @@ if __name__ == '__main__':
             for future in futures:
                 future.cancel()
 
-
-#c:\Python311\python d:\python\maths\ludmila_processpoll.py
-#python3 /home/nevep/web/nevep.ru/public_html/tmp/ludmila/ludmila_processpoll.py
+task(dataset)  # вызываем основноую функцию
