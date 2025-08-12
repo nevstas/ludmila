@@ -19,30 +19,30 @@ import warnings
 
 myLock = threading.Lock()
 
-#Путь к папке выполняемого скрипта
+# Path to the folder of the executing script
 script_path = os.path.dirname(os.path.realpath(__file__))
 
-# 1 Линейное 5 символов
+# 1 Linear (5 characters)
 # y = ax + b
 # v|x0;o|*;v|x1;o|+;v|x2
 
-# 2 Теорема пифагора 8 символов
+# 2 Pythagoras theorem (8 characters)
 # a ** 2 + b ** 2 = c ** 2
 # bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
 
-# 3 ряд простых чисел
+# 3 series of prime numbers
 
 
 dataset_id = 1
 
-#Имя файла с 'x' и 'y', например если dataset_id = 1, то dataset_filename будет 'data1.txt'
+# File name with 'x' and 'y', for example if dataset_id = 1, dataset_filename will be 'data1.txt'
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
-#Текущее уравнение с которого начинаем, далее оно будет инкрементится
+# The current equation to start from, then it will be incremented
 equation = [0]
 
-#элементы, из которых составляются уравнения путем конкатенции друг с другом
-#21-чная система счисления (от 0 до 20)
+# Elements from which equations are formed by concatenating with each other
+# Base-21 numeral system (from 0 to 20)
 #"0" => "n|0", "1" => "n|1", "2" => "n|2", "3" => "n|3", "4" => "n|4", "5" => "n|5"
 #"6" => "n|6", "7" => "n|7", "8" => "n|8", "9" => "n|9", "10" => "n|10"
 #"11" => "o|+", 12" => "o|*", 13" => "o|/", 14" => "om|-"
@@ -51,7 +51,7 @@ equation = [0]
 #"21" => "n|1;n|0"
 #"22" => "n|1;n|1"
 elements = [
-    #числа: 0-10
+    # numbers: 0-10
     "n|0",
     "n|1",
     "n|2",
@@ -64,17 +64,17 @@ elements = [
     "n|9",
     "n|10",
 
-    #операции: +, -, *, /
+    # operations: +, -, *, /
     "o|+",
     "o|*",
     "o|/",
     "om|-",
 
-    #скобки ( и )
+    # brackets ( and )
     "bl|(",
     "br|)",
 
-    #степень: 2 степень, 3 степень, корень квадратный, корень кубический
+    # exponentiation: power of 2, power of 3, square root, cube root
     # "e|**2",
     # "e|**3",
     # "e|**0.5",
@@ -83,42 +83,42 @@ elements = [
 
 elements_len = len(elements)
 
-#Ключи - типы элементов
-#allow_left - правила при конкатенции, содержит типы элементов, которые могут находится слева
-#При конкатенции элемента типа number смотрится на то кто стоит слева, разрешены o(operator), om(operator minus), s(start) и bl(bracket left)
-#Если слева символ иного типа, то конкатенция не происходит
-#Это сделано для уменьшения кол-ва вариантов при комбинаторике, уменьшения кол-ва ненужных итераций
+# Keys - element types
+# allow_left - rules for concatenation, contains element types that can be on the left
+# When concatenating a number type element, it checks what is on the left, allowed: o(operator), om(operator minus), s(start), and bl(bracket left)
+# If the left symbol is of another type, concatenation does not occur
+# This is done to reduce the number of options in combinatorics, and to reduce the number of unnecessary iterations
 
 types_of_elements = {
-    #start начало строки
+    # start of the string
     's': {
         'allow_left': [],
     },
-    #number
+    # number
     'n': {
         'allow_left': ['s', 'o', 'om', 'bl'],
     },
-    #operator
+    # operator
     'o': {
         'allow_left': ['n', 'br', 'v', 'e'],
     },
-    #operator minus
+    # operator minus
     'om': {
         'allow_left': ['s', 'n', 'bl', 'br', 'v', 'e'],
     },
-    #bracket left
+    # bracket left
     'bl': {
         'allow_left': ['s', 'o', 'om', 'e'],
     },
-    #bracket right
+    # bracket right
     'br': {
         'allow_left': ['n', 'v', 'e'],
     },
-    #variable
+    # variable
     'v': {
         'allow_left': ['s', 'o', 'om', 'bl'],
     },
-    #exponentiation
+    # exponentiation
     'e': {
         'allow_left': ['n', 'br', 'v'],
     },
@@ -144,9 +144,9 @@ elements = elements + variable_elements
 elements_len = len(elements)
 
 
-# Форматирует уравнения
-# Пример входящих данных: [1, 2, 3]
-# Исходящие: 7 + 5, где 5 это x0
+# Formats equations
+# Example input: [1, 2, 3]
+# Output: 7 + 5, where 5 is x0
 def format(equation, x):
     equation = ''.join([elements[i] for i in equation])
     for variable_count, x_item in enumerate(x):
@@ -161,9 +161,9 @@ def format(equation, x):
     return equation
 
 
-# Выполняет уравнение и српанивает решение с 'y', если решение решено верно, то возвращает True
-# Пример входящих данных: "51 * 62 + 73" и "3235"
-# Исходящие True
+# Executes the equation and compares the solution with 'y'; if the solution is correct, returns True
+# Example input: "51 * 62 + 73" and "3235"
+# Output: True
 def calc(equation, y):
     try:
         with warnings.catch_warnings():
@@ -178,11 +178,11 @@ def calc(equation, y):
         return False
 
 
-# Выполняет все (например 100шт) уравнения (например из файла data1.txt) и если все уравнения решены верно, то возвращает True
-# То, что функция calc() решила уравнение верно, не означает что это искомое уравнение.
-# Если calc() вернула True, то запускаем функцию calc_all(), где проверяем уравнение на большом количестве данных
+# Executes all (e.g., 100) equations (e.g., from file data1.txt) and if all equations are solved correctly, returns True
+# The fact that calc() solved one equation correctly does not mean it's the desired equation.
+# If calc() returned True, then run calc_all() to check the equation on a large dataset
 # Пример входящих данных: массив "51 * 62 + 73" и "3235"
-# Исходящие True
+# Output: True
 def calc_all(equation, dataset):
     for dataset_item in dataset:
         equation_format = format(equation, dataset_item['x'])
@@ -219,7 +219,7 @@ def get_type_of_element(element):
     return element[0:index_of_type]
 
 
-# Пишет в лог log.txt (например найденные уравнения)
+# Writes to log.txt (e.g., found equations)
 the_file = open(script_path + "/log.txt", 'a')
 
 
@@ -230,8 +230,8 @@ def writeln(str):
             the_file.flush()
 
 
-# Входящие данные [12, 9, 5]
-# Исходящие данные [12, 9, 6]
+# Input data [12, 9, 5]
+# Output data [12, 9, 6]
 def equation_number_increment(equation):
     current_index = len(equation) - 1
     while (True):
@@ -265,9 +265,9 @@ def equation_number_increment_by_index(equation, current_index):
                 return equation
 
 
-# Форматирование уравнения в читабельный вид
-# Входящие данные [1, 2, 3]
-# исходящие данные v|x0;o|*;v|x1;o|+;v|x2
+# Formatting equation into human-readable form
+# Input data [1, 2, 3]
+# Output data v|x0;o|*;v|x1;o|+;v|x2
 def format_equation_to_human_view(equation):
     equation_human = ""
     for index_of_element in equation:
@@ -278,9 +278,9 @@ def format_equation_to_human_view(equation):
     return equation_human
 
 
-# Ковертирует число десятичной системы счисления в число elements_len системы счисления (например 21)
-# Входящие данные 24
-# исходящие данные [1, 3]
+# Converts a decimal number to a number in elements_len numeral system (e.g., 21)
+# Input data 24
+# Output data [1, 3]
 def decimal_to_custom(number):
     x = (number % elements_len)
     ch = [x]

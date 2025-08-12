@@ -281,7 +281,7 @@ def task(dataset):
             print(f"Speed: {int(speed)} eq/s")
 
 with open(script_path + "/datasets/" + dataset_filename) as f:
-    dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
+    dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235 51 62 73"
 
 dataset = []  # dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
 for dataset_plain_item in dataset_plain:
