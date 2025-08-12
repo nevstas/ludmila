@@ -168,7 +168,7 @@ def calc(equation, y):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter(
-                "ignore")  # Отключаем Warning на сулчай если в equation будет не вылидным, например "4(3)"
+                "ignore")  # Disable Warning on the off chance that the equation is not correct, for example "4(3)"
             result_of_equation = eval(equation)
         if float(result_of_equation) == float(y):
             return True
@@ -181,7 +181,7 @@ def calc(equation, y):
 # Executes all (e.g., 100) equations (e.g., from file data1.txt) and if all equations are solved correctly, returns True
 # The fact that calc() solved one equation correctly does not mean it's the desired equation.
 # If calc() returned True, then run calc_all() to check the equation on a large dataset
-# Пример входящих данных: массив "51 * 62 + 73" и "3235"
+# Example input: array "51 * 62 + 73" and "3235"
 # Output: True
 def calc_all(equation, dataset):
     for dataset_item in dataset:
@@ -191,7 +191,7 @@ def calc_all(equation, dataset):
     return True
 
 
-# Проверяет число по allow соседней, стоящих друг с другом
+# Checks a number against allowed neighbors standing next to each other
 def check_allow_concat(equation):
     for key, e in enumerate(equation):
         if key == 0:
@@ -208,10 +208,10 @@ def check_allow_concat(equation):
     return {'result': True, 'key': 0}
 
 
-# Получает тип элемента
-# Входящие параметры n|8
-# Результат n
-# Не используем регулярки, ибо накладно
+# Gets the type of element
+# Input parameters n|8
+# Result: n
+# We do not use regex because it is too heavy
 def get_type_of_element(element):
     if not element:
         return 's'
@@ -260,7 +260,7 @@ def equation_number_increment_by_index(equation, current_index):
             else:
                 for key, number in enumerate(equation):
                     equation[key] = 0
-                print('Проверены уравнения длиной ' + str(len(equation)))
+                print('Checked equation length ' + str(len(equation)))
                 equation = [0] + equation
                 return equation
 
@@ -302,7 +302,7 @@ def cleanup():
 
 def get_tasks(fnc_num_tasks, fnc_equation_decimal_start, fnc_task_position, fnc_chunk):
     print('get tasks ' + str(random.randint(1, 100)))
-    # Создаем несколько задач для одновременной обработки
+    # Create multiple tasks for simultaneous processing
     tasks = []
     for _ in range(fnc_num_tasks):
         position_decimal_start = fnc_equation_decimal_start + fnc_task_position * fnc_chunk
@@ -316,8 +316,6 @@ def get_tasks(fnc_num_tasks, fnc_equation_decimal_start, fnc_task_position, fnc_
     return [fnc_task_position, tasks]
 
 def task(fnc_elements, fnc_variable_elements, fnc_time_total_start, fnc_dataset, fnc_first_element_of_dataset, fnc_position_start, fnc_position_end, fnc_position_decimal_start, fnc_position_decimal_end):
-    # Выполнение задачи (например, печать начала позиции)
-
     # print('task was started')
     equation = fnc_position_start.copy()
     while True:
@@ -326,9 +324,9 @@ def task(fnc_elements, fnc_variable_elements, fnc_time_total_start, fnc_dataset,
         if calc(equation_format, fnc_first_element_of_dataset['y']):
             if calc_all(equation, fnc_dataset):
                 time_total = time.time() - fnc_time_total_start
-                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
-                    dataset_id) + ": " + format_equation_to_human_view(equation) + " на " + str(
-                    round(time_total, 2)) + " сек"
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(
+                    dataset_id) + ": " + format_equation_to_human_view(equation) + " at " + str(
+                    round(time_total, 2)) + " seconds"
                 writeln(message)
                 print(message)
 
@@ -357,18 +355,18 @@ if __name__ == '__main__':
         futures = []
         try:
             while True:
-                # Получаем список задач
-                tasks_fnc = get_tasks(20 * multiprocessing.cpu_count(), equation_decimal_start, task_position, chunk)  # Создаем больше задач, чтобы загрузить все ядра
+                # Receive a list of tasks
+                tasks_fnc = get_tasks(20 * multiprocessing.cpu_count(), equation_decimal_start, task_position, chunk)  # Create more tasks to load all cores
                 task_position = tasks_fnc[0]
                 task_list = tasks_fnc[1]
 
-                # Добавляем все задачи в пул
+                # Add all tasks to the pool
                 for task_data in task_list:
                     future = executor.submit(task, elements, variable_elements, time_total_start, dataset, first_element_of_dataset, task_data[0], task_data[1], task_data[2], task_data[3])
                     futures.append(future)
 
-                # Ожидание завершения некоторых задач, чтобы избежать переполнения памяти
-                # Проверяем завершенные задачи и убираем их из списка
+                # Waiting for some tasks to complete to avoid memory overflow
+                # Checking completed tasks and removing them from the list
                 for f in as_completed(futures):
                     completed_tasks += 1
                     equation_count = completed_tasks * chunk
@@ -378,7 +376,7 @@ if __name__ == '__main__':
         except:
             print('Exeption')
         finally:
-            # Ожидание завершения всех оставшихся задач перед выходом
+            # Wait for all remaining tasks to complete before exiting
             for future in futures:
                 future.cancel()
 
