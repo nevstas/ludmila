@@ -349,8 +349,11 @@ if __name__ == '__main__':
     # equation_decimal_start = 2000000 #remove this
 
     chunk = 10000000
+    completed_tasks = 0
+    threads = multiprocessing.cpu_count()
+    time_stat = time.time()
 
-    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+    with ProcessPoolExecutor(max_workers=threads) as executor:
         futures = []
         try:
             while True:
@@ -367,6 +370,10 @@ if __name__ == '__main__':
                 # Ожидание завершения некоторых задач, чтобы избежать переполнения памяти
                 # Проверяем завершенные задачи и убираем их из списка
                 for f in as_completed(futures):
+                    completed_tasks += 1
+                    equation_count = completed_tasks * chunk
+                    speed = equation_count / (time.time() - time_stat)
+                    print(f"Speed: {int(speed)} eq/s")
                     futures.remove(f)
         except:
             print('Exeption')

@@ -78,12 +78,12 @@ y = x0 * x1 + x2
 c:\Python37\python e:\python\maths\ludmila.py
 - результат будет в консоле, а так же в лог файле log.txt
 
-## Вопросы
-У меня есть два вопроса к сообществу:
+## Файлы
 
-- Есть ли подобные скрипты? Возможно кто-то уже делал такое и мой скрипт бессмысленный потому что эта работа уже проделана кем-то другим.
-
-- Вопрос к тем кто работал с CUDA. Сейчас вычисления производятся на CPU. Возможно ли переделать на GPU тем самым повысив производительность в десятки раз?
+- [ludmila.py](ludmila.py) - CPU
+- [ludmila_processpoll.py](ludmila_processpoll.py) - CPU multiprocessing
+- [google_colab.py](google_colab.py) - CPU google colab
+- [google_colab_processpoll.py](google_colab_processpoll.py) - CPU google colab multiprocessing  
 
 ## Обсуждение на форумах математиков и программистов
 

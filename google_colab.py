@@ -276,11 +276,9 @@ def task(dataset):
         equation = equation_number_increment(equation)
 
         equation_count += 1
-        if time.time() - time_stat >= 5:
-            speed = equation_count / 5
+        if equation_count % 100000 == 0:
+            speed = equation_count / (time.time() - time_stat)
             print(f"Speed: {int(speed)} eq/s")
-            time_stat = time.time()
-            equation_count = 0
 
 with open(script_path + "/datasets/" + dataset_filename) as f:
     dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235	51	62	73"
