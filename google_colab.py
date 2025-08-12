@@ -11,31 +11,39 @@ from numba import vectorize
 
 myLock = threading.Lock()
 
-# Путь к располажению выполняемого скрипта
+# Path to the folder of the executing script
 script_path = "/content/drive/My Drive/ludmila/ludmila"
 
-# 1 Линейное 5 символов
+# 1 Linear (5 characters)
 # y = ax + b
 # v|x0;o|*;v|x1;o|+;v|x2
 
-# 2 Теорема пифагора 8 символов
+# 2 Pythagoras theorem (8 characters)
 # a ** 2 + b ** 2 = c ** 2
 # bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
 
-# 3 ряд простых чисел
+# 3 series of prime numbers
 
 
 dataset_id = 1
 
-# Имя файла с 'x' и 'y', например если dataset_id = 1, то dataset_filename будет 'data1.txt'
+# File name with 'x' and 'y', for example if dataset_id = 1, dataset_filename will be 'data1.txt'
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
-# Текущее уравнение с которого начинаем, далее оно будет инкрементится
+# The current equation to start from, then it will be incremented
 equation = [0]
 
-# элементы, из которых составляются уравнения путем конкатенции друг с другом
+# Elements from which equations are formed by concatenating with each other
+# Base-21 numeral system (from 0 to 20)
+#"0" => "n|0", "1" => "n|1", "2" => "n|2", "3" => "n|3", "4" => "n|4", "5" => "n|5"
+#"6" => "n|6", "7" => "n|7", "8" => "n|8", "9" => "n|9", "10" => "n|10"
+#"11" => "o|+", 12" => "o|*", 13" => "o|/", 14" => "om|-"
+#"15" => "bl|(", "16" => "br|)"
+#"17" => "e|**2", "18" => "e|**3", "19" => "e|**0.5", "20" => "e|**(1/3)"
+#"21" => "n|1;n|0"
+#"22" => "n|1;n|1"
 elements = [
-    # числа: 0-10
+    # numbers: 0-10
     "n|0",
     "n|1",
     "n|2",
@@ -48,17 +56,17 @@ elements = [
     "n|9",
     "n|10",
 
-    # операции: +, -, *, /
+    # operations: +, -, *, /
     "o|+",
     "o|*",
     "o|/",
     "om|-",
 
-    # скобки ( и )
+    # brackets ( and )
     "bl|(",
     "br|)",
 
-    # степень: 2 степень, 3 степень, корень квадратный, корень кубический
+    # exponentiation: power of 2, power of 3, square root, cube root
     # "e|**2",
     # "e|**3",
     # "e|**0.5",
@@ -67,14 +75,14 @@ elements = [
 
 elements_len = len(elements)
 
-# Ключи - типы элементов
-# allow_left - правила при конкатенции, содержит типы элементов, которые могут находится слева
-# При конкатенции элемента типа number смотрится на то кто стоит слева, разрешены o(operator), om(operator minus), s(start) и bl(bracket left)
-# Если слева символ иного типа, то конкатенция не происходит
-# Это сделано для уменьшения кол-ва вариантов при комбинаторике, уменьшения кол-ва ненужных итераций
+# Keys - element types
+# allow_left - rules for concatenation, contains element types that can be on the left
+# When concatenating a number type element, it checks what is on the left, allowed: o(operator), om(operator minus), s(start), and bl(bracket left)
+# If the left symbol is of another type, concatenation does not occur
+# This is done to reduce the number of options in combinatorics, and to reduce the number of unnecessary iterations
 
 types_of_elements = {
-    # start начало строки
+    # start of the string
     's': {
         'allow_left': [],
     },
@@ -109,9 +117,9 @@ types_of_elements = {
 }
 
 
-# Форматирует уравнения
-# Пример входящих данных: [1, 2, 3]
-# Исходящие: 7 + 5, где 5 это x0
+# Formats equations
+# Example input: [1, 2, 3]
+# Output: 7 + 5, where 5 is x0
 def format(equation, x):
     equation = ''.join([elements[i] for i in equation])
     for variable_count, x_item in enumerate(x):
@@ -126,14 +134,14 @@ def format(equation, x):
     return equation
 
 
-# Выполняет уравнение и српанивает решение с 'y', если решение решено верно, то возвращает True
-# Пример входящих данных: "51 * 62 + 73" и "3235"
-# Исходящие True
+# Executes the equation and compares the solution with 'y'; if the solution is correct, returns True
+# Example input: "51 * 62 + 73" and "3235"
+# Output: True
 def calc(equation, y):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter(
-                "ignore")  # Отключаем Warning на сулчай если в equation будет не вылидным, например "4(3)"
+                "ignore")  # Disable Warning on the off chance that the equation is not correct, for example "4(3)"
             result_of_equation = eval(equation)
         if float(result_of_equation) == float(y):
             return True
@@ -143,11 +151,11 @@ def calc(equation, y):
         return False
 
 
-# Выполняет все (например 100шт) уравнения (например из файла data1.txt) и если все уравнения решены верно, то возвращает True
-# То, что функция calc() решила уравнение верно, не означает что это искомое уравнение.
-# Если calc() вернула True, то запускаем функцию calc_all(), где проверяем уравнение на большом количестве данных
-# Пример входящих данных: массив "51 * 62 + 73" и "3235"
-# Исходящие True
+# Executes all (e.g., 100) equations (e.g., from file data1.txt) and if all equations are solved correctly, returns True
+# The fact that calc() solved one equation correctly does not mean it's the desired equation.
+# If calc() returned True, then run calc_all() to check the equation on a large dataset
+# Example input: array "51 * 62 + 73" and "3235"
+# Output: True
 def calc_all(equation, dataset):
     for dataset_item in dataset:
         equation_format = format(equation, dataset_item['x'])
@@ -156,7 +164,7 @@ def calc_all(equation, dataset):
     return True
 
 
-# Проверяет число по allow соседней, стоящих друг с другом
+# Checks a number against allowed neighbors standing next to each other
 def check_allow_concat(equation):
     for key, e in enumerate(equation):
         if key == 0:
@@ -173,10 +181,10 @@ def check_allow_concat(equation):
     return {'result': True, 'key': 0}
 
 
-# Получает тип элемента
-# Входящие параметры n|8
-# Результат n
-# Не используем регулярки, ибо накладно
+# Gets the type of element
+# Input parameters n|8
+# Result: n
+# We do not use regex because it is too heavy
 def get_type_of_element(element):
     if not element:
         return 's'
@@ -184,7 +192,7 @@ def get_type_of_element(element):
     return element[0:index_of_type]
 
 
-# Пишет в лог log.txt (например найденные уравнения)
+# Writes to log.txt (e.g., found equations)
 def writeln(str):
     myLock.acquire()
     with open(script_path + "/log.txt", 'a', encoding='utf-8') as the_file:
@@ -192,8 +200,8 @@ def writeln(str):
     myLock.release()
 
 
-# Входящие данные [12, 9, 5]
-# Исходящие данные [12, 9, 6]
+# Input data [12, 9, 5]
+# Output data [12, 9, 6]
 def equation_number_increment(equation):
     current_index = len(equation) - 1
     while (True):
@@ -222,14 +230,14 @@ def equation_number_increment_by_index(equation, current_index):
             else:
                 for key, number in enumerate(equation):
                     equation[key] = 0
-                print('Проверены уравнения длиной ' + str(len(equation)))
+                print('Checked equation length ' + str(len(equation)))
                 equation = [0] + equation
                 return equation
 
 
-# Форматирование уравнения в читабельный вид
-# Входящие данные [1, 2, 3]
-# исходящие данные v|x0;o|*;v|x1;o|+;v|x2
+# Formatting equation into human-readable form
+# Input data [1, 2, 3]
+# Output data v|x0;o|*;v|x1;o|+;v|x2
 def format_equation_to_human_view(equation):
     equation_human = ""
     for index_of_element in equation:
@@ -244,11 +252,11 @@ def task(dataset):
     global elements
     global elements_len
     global equation
-    first_element_of_dataset = dataset[0]  # Берем из большого набора данных (например 100) первый элемент
+    first_element_of_dataset = dataset[0] # Takes from the large dataset (e.g., 100) the first element
     variable_elements = []
     for variable_count, f in enumerate(first_element_of_dataset['x']):
         variable_elements.append("v|x" + str(variable_count))
-    elements = elements + variable_elements  # добавляем к элементам все 'x', их может быть разное количество
+    elements = elements + variable_elements # add all 'x' to elements, their number can vary
     elements_len = len(elements)
 
     time_total_start = time.time()
@@ -256,20 +264,16 @@ def task(dataset):
     equation_count = 0
     while (True):
 
-        equation_format = format(equation, first_element_of_dataset['x'])  # форматируем уравнение
+        equation_format = format(equation, first_element_of_dataset['x']) # format the equation
 
-        # print(format_equation_to_human_view(equation))
+        #print(format_equation_to_human_view(equation))
         # writeln(format_equation_to_human_view(equation))
 
-        if calc(equation_format,
-                first_element_of_dataset['y']):  # если уравнение выполнено на одном наборе данных x и y
+        if calc(equation_format, first_element_of_dataset['y']): # if the equation is valid on one set of x and y
 
-            if calc_all(equation,
-                        dataset):  # тогда выполняем проверку уравнения на большом наборе данных (например 100)
+            if calc_all(equation, dataset): # then check the equation on the large dataset (e.g., 100)
                 time_total = time.time() - time_total_start
-                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(
-                    dataset_id) + ": " + format_equation_to_human_view(equation) + " на " + str(
-                    round(time_total, 2)) + " сек"
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + format_equation_to_human_view(equation) + " at " + str(round(time_total, 2)) + " seconds"
                 writeln(message)
                 print(message)
 
@@ -281,15 +285,15 @@ def task(dataset):
             print(f"Speed: {int(speed)} eq/s")
 
 with open(script_path + "/datasets/" + dataset_filename) as f:
-    dataset_plain = f.readlines()  # считываем набор данных (например из файла data1.txt). Пример данных "3235 51 62 73"
+    dataset_plain = f.readlines() # read the dataset (e.g., from file data1.txt). Example: "3235 51 62 73"
 
-dataset = []  # dataset содержит элементы вида {'y': 3235, 'x': [51, 62, 73]} Первый элемент значение (решение) уравнения y, второй элемент массив входящих данных x
+dataset = [] # dataset contains elements like {'y': 3235, 'x': [51, 62, 73]} — first element is the solution y, second element is the input array x
 for dataset_plain_item in dataset_plain:
     dataset_plain_item = dataset_plain_item.strip()
     dataset_plain_item = dataset_plain_item.split("\t")
     y = dataset_plain_item[0]
-    dataset_plain_item.pop(0)  # Удаляем первый элемент массива (y), он нам не нужен
+    dataset_plain_item.pop(0) # Delete the first element of the array (y), we don’t need it
     x = dataset_plain_item
     dataset.append({"y": y, "x": x})
 
-task(dataset)  # вызываем основноую функцию
+task(dataset) # call the main function

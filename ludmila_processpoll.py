@@ -125,22 +125,22 @@ types_of_elements = {
 }
 
 with open(script_path + "/datasets/" + dataset_filename) as f:
-    dataset_plain = f.readlines()
+    dataset_plain = f.readlines()  # read the dataset (e.g., from file data1.txt). Example: "3235 51 62 73"
 
-dataset = []
+dataset = []  # dataset contains elements like {'y': 3235, 'x': [51, 62, 73]} — first element is the solution y, second element is the input array x
 for dataset_plain_item in dataset_plain:
     dataset_plain_item = dataset_plain_item.strip()
     dataset_plain_item = dataset_plain_item.split("\t")
     y = dataset_plain_item[0]
-    dataset_plain_item.pop(0)
+    dataset_plain_item.pop(0)  # Delete the first element of the array (y), we don’t need it
     x = dataset_plain_item
     dataset.append({"y": y, "x": x})
 
-first_element_of_dataset = dataset[0]
+first_element_of_dataset = dataset[0]  # Takes from the large dataset (e.g., 100) the first element
 variable_elements = []
 for variable_count, f in enumerate(first_element_of_dataset['x']):
     variable_elements.append("v|x" + str(variable_count))
-elements = elements + variable_elements
+elements = elements + variable_elements  # add all 'x' to elements, their number can vary
 elements_len = len(elements)
 
 

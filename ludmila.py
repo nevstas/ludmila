@@ -277,8 +277,6 @@ def task(dataset):
     elements = elements + variable_elements # add all 'x' to elements, their number can vary
     elements_len = len(elements)
 
-    equation = equation
-
     time_total_start = time.time()
     time_stat = time.time()
     equation_count = 0
