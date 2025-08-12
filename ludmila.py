@@ -137,7 +137,7 @@ def calc(equation, y):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter(
-                "ignore")  # Отключаем Warning на сулчай если в equation будет не вылидным, например "4(3)"
+                "ignore")  # Disable Warning on the off chance that the equation is not correct, for example "4(3)"
             result_of_equation = eval(equation)
         if float(result_of_equation) == float(y):
             return True
@@ -150,7 +150,7 @@ def calc(equation, y):
 # Executes all (e.g., 100) equations (e.g., from file data1.txt) and if all equations are solved correctly, returns True
 # The fact that calc() solved one equation correctly does not mean it's the desired equation.
 # If calc() returned True, then run calc_all() to check the equation on a large dataset
-# Пример входящих данных: массив "51 * 62 + 73" и "3235"
+# Example input: array "51 * 62 + 73" and "3235"
 # Output: True
 def calc_all(equation, dataset):
     for dataset_item in dataset:
@@ -229,7 +229,7 @@ def equation_number_increment_by_index(equation, current_index):
             else:
                 for key, number in enumerate(equation):
                     equation[key] = 0
-                print('Проверены уравнения длиной ' + str(len(equation)))
+                print('Checked equation length ' + str(len(equation)))
                 equation = [0] + equation
                 return equation
 
@@ -293,7 +293,7 @@ def task(dataset):
 
             if calc_all(equation, dataset): # then check the equation on the large dataset (e.g., 100)
                 time_total = time.time() - time_total_start
-                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Решение data" + str(dataset_id) + ": " + format_equation_to_human_view(equation) + " на " + str(round(time_total, 2)) + " сек"
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + format_equation_to_human_view(equation) + " at " + str(round(time_total, 2)) + " seconds"
                 writeln(message)
                 print(message)
 
@@ -312,7 +312,7 @@ for dataset_plain_item in dataset_plain:
     dataset_plain_item = dataset_plain_item.strip()
     dataset_plain_item = dataset_plain_item.split("\t")
     y = dataset_plain_item[0]
-    dataset_plain_item.pop(0) # Удаляем первый элемент массива (y), он нам не нужен
+    dataset_plain_item.pop(0) # Delete the first element of the array (y), we don’t need it
     x = dataset_plain_item
     dataset.append({"y": y, "x": x})
 
