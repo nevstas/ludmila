@@ -1,92 +1,98 @@
-# Ludmila - решение нерешенных математических задач методом подбора
+# Ludmila – Solving Unsolved Mathematical Problems by Brute Force
 
-## Описание
-Скрипт Ludmila предназначен для решения нерешенных математических задач методом подбора.
-Есть список элементов уравнений:
+[README.md](README.md) – English version of README.md  
 
-- числа (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-- операции (+, *, /, -)
-- скобки (левая, правая)
-- степень (квадратная, кубическая, корень квадратный, корень кубический)
-- x (может быть несколько в наборе - x0, x1, x2, ...)
+[README-RU.md](README-RU.md) – Russian version of README.md  
 
-Есть входящие наборы данных:
-- data1.txt (линейное уравнение)
-- data2.txt (теорема пифагора)
-- data3.txt (ряд простых чисел)
+## Description
+The Ludmila script is designed to solve unsolved mathematical problems using a brute-force method.  
+It has a list of equation elements:
 
-Например набор data1.txt (линейное уравнение) выглядит вот так:
+- Numbers (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+- Operations (+, *, /, -)
+- Brackets (left, right)
+- Powers (square, cubic, square root, cube root)
+- Variables `x` (there can be several in the dataset – x0, x1, x2, ...)
 
-3235	51	62	73
+It uses input datasets:
+- `data1.txt` (linear equation)
+- `data2.txt` (Pythagoras theorem)
+- `data3.txt` (prime number series)
 
-3350	52	63	74
+Example of `data1.txt` (linear equation):
 
-3467	53	64	75
+```
+3235    51    62    73
+3350    52    63    74
+3467    53    64    75
+...
+```
+(100 elements total)
 
-... и т.д. (всего 100 элеметов в наборе)
+The first number is the value of `y`, the following numbers are the values of `x` (in this case x0, x1, x2).
 
-Первая цифра значение y, последующие цифры значения x (в данном случае x0, x1, x2) 
+To find the correct equation, combinations of equations are iterated over. It looks like this:
 
-Для нахождения верного уравнения перебираются комбинации уравнений. Выглядит это примерно так:
-
+```
 y = 1
-
 y = 2
+...
+```
 
-... 
+All equations of length 1 are tried, then of length 2. Equations of length 3 might look like:
 
-перебираются все уравнения длинной 1, затем длинной 2. Уравнения длинной 3 могут выглядеть например так:
-
+```
 y = 1 + x0
-
 y = 1 + x1
+...
+```
+and so on until reaching:
 
-... и так далее, пока не дойдет до:
-
+```
 y = x0 * x1 + x2
+```
 
-В итоге набор данных (3235	51	62	73) выдаст совпадение, далее эта форумла перебирает все наборы данных data1.txt их всего 100 штук. И если все 100 наборы данных прошли проверку, то уравнение считается решенным.
+As a result, the dataset `(3235  51  62  73)` will produce a match, then this formula is tested on all datasets in `data1.txt` (100 total). If all 100 datasets pass, the equation is considered solved.
 
-## Оптимизация
+## Optimization
+Since it makes no sense to have, for example, two `+` operators next to each other, concatenation rules define what can be next to what.  
+This increased the script’s speed by 15 times.  
+The concatenation rules are found in variable `types_of_elements`.
 
-Так как нет смысла уравнения в котором рядом стоят например два оператора +, поэтому есть правила конкатенации - что может стоять рядом друг с другом, а что нет. В результате чего скорость работы скрипта была увеличина в 15 раз. Правила конкатенации находятся в config.py, переменная types_of_elements.
+## Performance
+Performance on CPU:
 
-## Производительность
+- Linear equation is solved in 7 seconds (5 characters): `v|x0;o|*;v|x1;o|+;v|x2`
+- Pythagoras theorem is solved in 8100 seconds (8 characters): `bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5`
 
-Производительность на CPU:
+## Purpose
+The main goal of this script is to solve unsolved mathematical problems:  
+- [Open Mathematical Problems](https://en.wikipedia.org/wiki/List_of_unsolved_problems_in_mathematics)
+- [Millennium Prize Problems](https://en.wikipedia.org/wiki/Millennium_Prize_Problems)
 
-- Линейное уравнение решается за 7 секунд (5 символов) v|x0;o|*;v|x1;o|+;v|x2 
-- Теорема пифагора решается за 8100 секунд (8 символов) bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
-
-## Задачи
-
-Главной задачей данного скрипта является решение нерешенных математических задач 
-- [Открытые математические проблемы](https://ru.wikipedia.org/wiki/%D0%9E%D1%82%D0%BA%D1%80%D1%8B%D1%82%D1%8B%D0%B5_%D0%BC%D0%B0%D1%82%D0%B5%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B5_%D0%BF%D1%80%D0%BE%D0%B1%D0%BB%D0%B5%D0%BC%D1%8B)
-- [Задачи тысячелетия](https://ru.wikipedia.org/wiki/%D0%97%D0%B0%D0%B4%D0%B0%D1%87%D0%B8_%D1%82%D1%8B%D1%81%D1%8F%D1%87%D0%B5%D0%BB%D0%B5%D1%82%D0%B8%D1%8F)
-
-Но не все они могут быть представлены в виде наборов данных.
+But not all of them can be represented as datasets.
 
 ## To Do
-- Переделать, на multiprocessing, чтобы использовались все ядра CPU.
-- Добавить больше математических операций - sin, cos, tg, ctg, π, e, log (упадет производительность, но увеличится вероятность нахождения формулы).
-- Добавить наборы данных для других нерешенных математических задач. 
+- Rewrite to use GPU instead of CPU
+- Add more mathematical operations – sin, cos, tg, ctg, π, e, log (performance will drop, but the probability of finding a formula will increase).
+- Add datasets for other unsolved mathematical problems.
 
-## Запуск
-
-- в файле config.py в переменной dataset_id указать id набора данных (1 - линейное, 2 - теорема пифагора, 3 - ряд простых чисел). Чтобы добавить dataset нового уравнения - поместите файл в папку "datasets" (разделитель tab; первый элемент y, остальные элементы это x)
-- запустить файл ludmila.py командой:
+## How to Run
+- Set the variable `dataset_id` to the dataset ID (1 – linear, 2 – Pythagoras theorem, 3 – prime number series).  
+  To add a dataset for a new equation, place the file in the `datasets` folder (tab separator; first element is `y`, the rest are `x`).
+- Run the file `ludmila.py` with the command:
+```
 c:\Python37\python e:\python\maths\ludmila.py
-- результат будет в консоле, а так же в лог файле log.txt
+```
+- The result will be in the console and also in the log file `log.txt`.
 
-## Файлы
+## Files
+- [ludmila.py](ludmila.py) – CPU
+- [ludmila_processpoll.py](ludmila_processpoll.py) – CPU multiprocessing
+- [google_colab.py](google_colab.py) – CPU Google Colab
+- [google_colab_processpoll.py](google_colab_processpoll.py) – CPU Google Colab multiprocessing  
 
-- [ludmila.py](ludmila.py) - CPU
-- [ludmila_processpoll.py](ludmila_processpoll.py) - CPU multiprocessing
-- [google_colab.py](google_colab.py) - CPU google colab
-- [google_colab_processpoll.py](google_colab_processpoll.py) - CPU google colab multiprocessing  
-
-## Обсуждение на форумах математиков и программистов
-
+## Discussions on Mathematician & Programmer Forums
 - [linux.org.ru](https://www.linux.org.ru/forum/general/16478781)
 - [dxdy.ru](https://dxdy.ru/topic146962.html)
 - [ru.stackoverflow.com](https://ru.stackoverflow.com/questions/1318101/gpu-%d0%b2%d1%8b%d1%87%d0%b8%d1%81%d0%bb%d0%b5%d0%bd%d0%b8%d1%8f-%d0%b2%d0%bc%d0%b5%d1%81%d1%82%d0%be-cpu-%d0%b2%d1%8b%d1%87%d0%b8%d1%81%d0%bb%d0%b5%d0%bd%d0%b8%d0%b9)
@@ -98,7 +104,6 @@ c:\Python37\python e:\python\maths\ludmila.py
 - [math10.com](https://www.math10.com/ru/forum/viewtopic.php?f=42&t=3185)
 - [math.hashcode.ru](http://math.hashcode.ru/questions/226775/python-ludmila-%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BD%D0%B5%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%BD%D1%8B%D1%85-%D0%BC%D0%B0%D1%82%D0%B5%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D1%85-%D0%B7%D0%B0%D0%B4%D0%B0%D1%87-%D0%BC%D0%B5%D1%82%D0%BE%D0%B4%D0%BE%D0%BC-%D0%BF%D0%BE%D0%B4%D0%B1%D0%BE%D1%80%D0%B0)
 
-## Полезные ссылки
-
-- [BOINC](https://ru.wikipedia.org/wiki/BOINC)
-- [Добровольные вычисления](https://ru.wikipedia.org/wiki/%D0%94%D0%BE%D0%B1%D1%80%D0%BE%D0%B2%D0%BE%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5_%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F)
+## Useful Links
+- [BOINC](https://en.wikipedia.org/wiki/BOINC)
+- [Volunteer Computing](https://en.wikipedia.org/wiki/Volunteer_computing)
