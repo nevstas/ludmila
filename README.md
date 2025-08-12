@@ -82,7 +82,7 @@ But not all of them can be represented as datasets.
   To add a dataset for a new equation, place the file in the `datasets` folder (tab separator; first element is `y`, the rest are `x`).
 - Run the file `ludmila.py` with the command:
 ```
-c:\Python37\python e:\python\maths\ludmila.py
+c:\Python311\python d:\python\maths\ludmila.py
 ```
 - The result will be in the console and also in the log file `log.txt`.
 
