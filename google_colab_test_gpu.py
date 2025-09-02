@@ -6,13 +6,25 @@ print("Устройство:", device)
 
 y = 4211
 start, end = -100000000, 99
-base = 59 * 70
 
 torch.cuda.synchronize() if device == 'cuda' else None
 t0 = time.perf_counter()
 
 x_vals = torch.arange(start, end + 1, dtype=torch.int32, device=device)
-mask = (base + x_vals) == y
+
+# --- четыре арифметические операции ---
+mask_add = (59 * 70 + x_vals) == y
+mask_sub = (59 * 70 - x_vals) == y
+mask_mul = (59 * 70 * x_vals) == y
+
+# для деления исключаем ноль
+x_safe = x_vals.clone()
+x_safe[x_safe == 0] = 1  # временная заглушка
+mask_div = (59 * 70 / x_safe) == y
+mask_div[x_vals == 0] = False  # убрать ложные совпадения при делении на 0
+
+# объединяем все маски
+mask = mask_add | mask_sub | mask_mul | mask_div
 idx = torch.nonzero(mask, as_tuple=False)
 
 torch.cuda.synchronize() if device == 'cuda' else None
