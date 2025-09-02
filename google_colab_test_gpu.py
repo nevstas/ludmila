@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import time
 import itertools
 import torch
@@ -8,11 +7,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Устройство:", device)
 
 y = 4211
-rng_start, rng_end = -1000, 1000   # диапазон значений для КАЖДОГО операнда (меняй при необходимости)
+start, end = -1000, 1000          # диапазон X; можешь увеличить
 dtype = torch.int64
 
-# Предохранитель от экспоненты: сколько скалярных итераций позволяем максимум
-max_scalar_loops = 5_000_000
+# Пул операндов: 'x' плюс константы (сюда добавляй свои числа)
+CONST_POOL = [59, 70, 81]
 
 # ---------------- УТИЛИТЫ ----------------
 def fmt_time(t):
@@ -21,283 +20,156 @@ def fmt_time(t):
     mins = int(t // 60)
     return f"{mins} мин {sec} сек {ms} мс"
 
-def apply_op_scalar(a, b, op):
-    """Скалярная операция. Для '/' — строгое целочисленное деление без остатка."""
-    if op == '+':
-        return a + b, True
-    if op == '-':
-        return a - b, True
-    if op == '*':
-        return a * b, True
-    if op == '/':
-        if b == 0:
-            return 0, False
-        if a % b != 0:
-            return 0, False
-        return a // b, True
-    return 0, False
+def op_add(a, b):
+    return a + b, torch.ones_like(a, dtype=torch.bool)
 
-def inverse_last_needed(r, op_last, y_const):
+def op_sub(a, b):
+    return a - b, torch.ones_like(a, dtype=torch.bool)
+
+def op_mul(a, b):
+    return a * b, torch.ones_like(a, dtype=torch.bool)
+
+def op_div(a, b):
+    # строгая целочисленная делимость и запрет деления на 0
+    # a и b — тензоры одной формы (вектор по x)
+    valid = (b != 0) & (a.remainder(b) == 0)
+    out = torch.empty_like(a)
+    if valid.any():
+        out[valid] = a[valid] // b[valid]
+    if (~valid).any():
+        out[~valid] = 0  # значение не важно — всё равно будет отфильтровано mask'ом
+    return out, valid
+
+OPS = {'+': op_add, '-': op_sub, '*': op_mul, '/': op_div}
+
+def operand_tensor(token, x_vals):
+    """Возвращает тензор-операнд для токена: 'x' или константа."""
+    if token == 'x':
+        return x_vals
+    else:
+        # скаляр конвертируем в тензор и broadсast-им до формы x_vals
+        return torch.full_like(x_vals, int(token), dtype=x_vals.dtype, device=x_vals.device)
+
+def eval_expr_tokens(tokens, ops, x_vals):
     """
-    Для известного промежуточного r и последней операции op_last находим необходимый
-    последний операнд v, чтобы (r op_last v) == y_const.
-    r и y_const — тензоры одинаковой формы.
-    Возвращает (v, valid_mask).
+    tokens: список операндов длиной N из {'x'} ∪ {строковые константы}
+    ops: список символов операций длиной N-1
+    Возвращает:
+      - res: тензор результатов для каждого x (если нет 'x' в tokens — скалярный тензор одинакового значения)
+      - valid: булев тензор валидности на каждой позиции x (если нет 'x' — единичный булев тензор True/False, растянем)
+      - has_x: bool — участвует ли x в выражении
     """
-    if op_last == '+':
-        return (y_const - r), torch.ones_like(r, dtype=torch.bool)
+    has_x = any(tok == 'x' for tok in tokens)
+    if has_x:
+        res = operand_tensor(tokens[0], x_vals)
+        valid = torch.ones_like(x_vals, dtype=torch.bool)
+    else:
+        # нет x: используем фиктивный одномерный тензор, потом растянем
+        dummy = torch.tensor([0], device=x_vals.device, dtype=x_vals.dtype)
+        res = operand_tensor(tokens[0], dummy)[:1]  # скаляр с shape [1]
+        valid = torch.ones(1, dtype=torch.bool, device=x_vals.device)
 
-    if op_last == '-':
-        # r - v = y  =>  v = r - y
-        return (r - y_const), torch.ones_like(r, dtype=torch.bool)
+    for sym, tok in zip(ops, tokens[1:]):
+        b = operand_tensor(tok, x_vals if has_x else res)  # если нет x — shape [1]
+        fn = OPS[sym]
+        res, v_step = fn(res, b)
+        valid = valid & v_step
+        if has_x and not valid.any():
+            break
+        if not has_x and not bool(valid.item()):
+            break
 
-    if op_last == '*':
-        # r * v = y  =>  r != 0, y % r == 0, v = y // r
-        valid = (r != 0) & (y_const % r == 0)
-        v = torch.empty_like(r)
-        if valid.any():
-            v[valid] = y_const[valid] // r[valid]
-        if (~valid).any():
-            v[~valid] = 0
-        return v, valid
+    if not has_x:
+        # растягиваем скаляр до длины x_vals
+        res = res.expand_as(x_vals)
+        valid = valid.expand_as(x_vals)
 
-    if op_last == '/':
-        # r / v = y  =>  y != 0, r % y == 0, v = r // y, и v != 0
-        # (случай y==0 даёт бесконечно много решений; не рассматриваем)
-        y0 = y_const
-        if (y0 == 0).all():
-            return torch.zeros_like(r), torch.zeros_like(r, dtype=torch.bool)
-        valid = (y0 != 0) & (r % y0 == 0)
-        v = torch.empty_like(r)
-        if valid.any():
-            v[valid] = r[valid] // y0[valid]
-        if (~valid).any():
-            v[~valid] = 0
-        valid = valid & (v != 0)
-        return v, valid
+    return res, valid, has_x
 
-    raise ValueError("Unknown op")
-
-def in_range_int(v, lo, hi):
-    return (v >= lo) & (v <= hi)
-
-def print_formula(operands, ops):
+def build_formula(tokens, x_value=None):
+    """Собирает строку формулы. Если x_value задан — подставляет число вместо 'x'."""
     parts = []
-    for i, val in enumerate(operands):
-        parts.append(str(int(val)))
-        if i < len(ops):
-            parts.append(ops[i])
-    return " ".join(parts)
+    for i, tok in enumerate(tokens):
+        val = str(x_value) if (tok == 'x' and x_value is not None) else str(tok)
+        parts.append(val)
+        if i < len(tokens) - 1:
+            # оператор будет добавлен снаружи
+            parts.append(None)  # плейсхолдер под оператор
+    return parts  # список из чисел/None (операторы на местах None)
 
-# ---------------- ПОДГОТОВКА ----------------
-vec_vals = torch.arange(rng_start, rng_end + 1, dtype=dtype, device=device)
-range_vals = list(range(rng_start, rng_end + 1))
-ops_set = ['+', '-', '*', '/']
+def stringify(parts, ops):
+    out = []
+    op_iter = iter(ops)
+    for p in parts:
+        if p is None:
+            out.append(next(op_iter))
+        else:
+            out.append(str(p))
+    return " ".join(out)
 
 # ---------------- ПОИСК ----------------
 torch.cuda.synchronize() if device == 'cuda' else None
 t0 = time.perf_counter()
 
-found = False
-found_operands = None
-found_ops = None
-scalar_loops = 0
+x_vals = torch.arange(start, end + 1, dtype=dtype, device=device)
 
-# длина выражения (число операндов) 1..5
-for length in range(1, 6):
-    if found:
+solution = None
+solution_tokens = None
+solution_ops = None
+solution_x = None
+
+OPERAND_POOL = ['x'] + [str(c) for c in CONST_POOL]
+
+checked_exprs = 0
+
+for length in range(1, 6):  # длина по операндам
+    if solution is not None:
         break
+    # все последовательности операндов
+    for tokens in itertools.product(OPERAND_POOL, repeat=length):
+        # все последовательности операций соответствующей длины
+        if length == 1:
+            ops_list = [()]
+        else:
+            ops_list = itertools.product('+-*/', repeat=length - 1)
 
-    # length == 1: просто a == y
-    if length == 1:
-        if rng_start <= y <= rng_end:
-            found = True
-            found_operands = [y]
-            found_ops = []
-        continue
+        for ops in ops_list:
+            checked_exprs += 1
 
-    # генерируем все последовательности операций длиной length-1
-    for ops in itertools.product(ops_set, repeat=length - 1):
-        if found:
+            res, valid, has_x = eval_expr_tokens(tokens, ops, x_vals)
+            hit = valid & (res == y)
+
+            if hit.any():
+                idx = torch.nonzero(hit, as_tuple=False)[0, 0]
+                x_found = int(x_vals[idx].item()) if has_x else None
+                solution = True
+                solution_tokens = tokens
+                solution_ops = ops
+                solution_x = x_found
+                break
+        if solution is not None:
             break
 
-        if length == 2:
-            # выражение: a op b
-            # перебираем a скаляром, b находим аналитически (тензором), фильтруем попадания
-            for a in range_vals:
-                scalar_loops += 1
-                if scalar_loops > max_scalar_loops:
-                    break
-
-                r = torch.full_like(vec_vals, a, device=device)
-                y_vec = torch.full_like(vec_vals, y, device=device)
-                v_needed, valid = inverse_last_needed(r, ops[-1], y_vec)
-                hit = valid & in_range_int(v_needed, rng_start, rng_end)
-                if hit.any():
-                    b = int(v_needed[hit][0].item())
-                    found = True
-                    found_operands = [a, b]
-                    found_ops = [ops[-1]]
-                    break
-
-        elif length == 3:
-            # выражение: (a op0 b) op1 c
-            # перебираем a скаляром, b — вектором, c находим аналитически
-            for a in range_vals:
-                scalar_loops += 1
-                if scalar_loops > max_scalar_loops:
-                    break
-
-                b_vec = vec_vals
-                a_vec = torch.full_like(b_vec, a, device=device)
-
-                if ops[0] == '/':
-                    valid_r = (b_vec != 0) & (a_vec.remainder(b_vec) == 0)
-                    r_vec = torch.empty_like(b_vec)
-                    if valid_r.any():
-                        r_vec[valid_r] = a_vec[valid_r] // b_vec[valid_r]
-                    if (~valid_r).any():
-                        r_vec[~valid_r] = 0
-                elif ops[0] == '+':
-                    r_vec = a_vec + b_vec
-                    valid_r = torch.ones_like(r_vec, dtype=torch.bool)
-                elif ops[0] == '-':
-                    r_vec = a_vec - b_vec
-                    valid_r = torch.ones_like(r_vec, dtype=torch.bool)
-                elif ops[0] == '*':
-                    r_vec = a_vec * b_vec
-                    valid_r = torch.ones_like(r_vec, dtype=torch.bool)
-                else:
-                    raise RuntimeError
-
-                y_vec = torch.full_like(r_vec, y, device=device)
-                v_needed, valid2 = inverse_last_needed(r_vec, ops[1], y_vec)
-                hit = valid_r & valid2 & in_range_int(v_needed, rng_start, rng_end)
-                if hit.any():
-                    b = int(b_vec[hit][0].item())
-                    c = int(v_needed[hit][0].item())
-                    found = True
-                    found_operands = [a, b, c]
-                    found_ops = [ops[0], ops[1]]
-                    break
-
-        elif length == 4:
-            # выражение: ((a op0 b) op1 c) op2 d
-            # перебираем a,b скалярами, c — вектором, d находим аналитически
-            for a in range_vals:
-                if found:
-                    break
-                for b in range_vals:
-                    scalar_loops += 1
-                    if scalar_loops > max_scalar_loops:
-                        break
-
-                    r1, ok1 = apply_op_scalar(a, b, ops[0])
-                    if not ok1:
-                        continue
-
-                    c_vec = vec_vals
-                    r1_vec = torch.full_like(c_vec, r1, device=device)
-
-                    if ops[1] == '/':
-                        valid_r2 = (c_vec != 0) & (r1_vec.remainder(c_vec) == 0)
-                        r2 = torch.empty_like(c_vec)
-                        if valid_r2.any():
-                            r2[valid_r2] = r1_vec[valid_r2] // c_vec[valid_r2]
-                        if (~valid_r2).any():
-                            r2[~valid_r2] = 0
-                    elif ops[1] == '+':
-                        r2 = r1_vec + c_vec
-                        valid_r2 = torch.ones_like(r2, dtype=torch.bool)
-                    elif ops[1] == '-':
-                        r2 = r1_vec - c_vec
-                        valid_r2 = torch.ones_like(r2, dtype=torch.bool)
-                    elif ops[1] == '*':
-                        r2 = r1_vec * c_vec
-                        valid_r2 = torch.ones_like(r2, dtype=torch.bool)
-                    else:
-                        raise RuntimeError
-
-                    y_vec = torch.full_like(r2, y, device=device)
-                    v_needed, valid3 = inverse_last_needed(r2, ops[2], y_vec)
-                    hit = valid_r2 & valid3 & in_range_int(v_needed, rng_start, rng_end)
-                    if hit.any():
-                        c = int(c_vec[hit][0].item())
-                        d = int(v_needed[hit][0].item())
-                        found = True
-                        found_operands = [a, b, c, d]
-                        found_ops = [ops[0], ops[1], ops[2]]
-                        break
-
-        elif length == 5:
-            # выражение: (((a op0 b) op1 c) op2 d) op3 e
-            # перебираем a,b,c скалярами, d — вектором, e находим аналитически
-            for a in range_vals:
-                if found:
-                    break
-                for b in range_vals:
-                    if found:
-                        break
-                    for c in range_vals:
-                        scalar_loops += 1
-                        if scalar_loops > max_scalar_loops:
-                            break
-
-                        r1, ok1 = apply_op_scalar(a, b, ops[0])
-                        if not ok1:
-                            continue
-                        r2, ok2 = apply_op_scalar(r1, c, ops[1])
-                        if not ok2:
-                            continue
-
-                        d_vec = vec_vals
-                        r2_vec = torch.full_like(d_vec, r2, device=device)
-
-                        if ops[2] == '/':
-                            valid_r3 = (d_vec != 0) & (r2_vec.remainder(d_vec) == 0)
-                            r3 = torch.empty_like(d_vec)
-                            if valid_r3.any():
-                                r3[valid_r3] = r2_vec[valid_r3] // d_vec[valid_r3]
-                            if (~valid_r3).any():
-                                r3[~valid_r3] = 0
-                        elif ops[2] == '+':
-                            r3 = r2_vec + d_vec
-                            valid_r3 = torch.ones_like(r3, dtype=torch.bool)
-                        elif ops[2] == '-':
-                            r3 = r2_vec - d_vec
-                            valid_r3 = torch.ones_like(r3, dtype=torch.bool)
-                        elif ops[2] == '*':
-                            r3 = r2_vec * d_vec
-                            valid_r3 = torch.ones_like(r3, dtype=torch.bool)
-                        else:
-                            raise RuntimeError
-
-                        y_vec = torch.full_like(r3, y, device=device)
-                        v_needed, valid4 = inverse_last_needed(r3, ops[3], y_vec)
-                        hit = valid_r3 & valid4 & in_range_int(v_needed, rng_start, rng_end)
-                        if hit.any():
-                            d = int(d_vec[hit][0].item())
-                            e = int(v_needed[hit][0].item())
-                            found = True
-                            found_operands = [a, b, c, d, e]
-                            found_ops = [ops[0], ops[1], ops[2], ops[3]]
-                            break
-
-        else:
-            raise RuntimeError("unexpected length")
-
-# ---------------- ВЫВОД ----------------
 torch.cuda.synchronize() if device == 'cuda' else None
 t1 = time.perf_counter()
+
+# ---------------- ВЫВОД ----------------
 elapsed = t1 - t0
 
-if found:
-    formula = print_formula(found_operands, found_ops)
-    print("Найдена формула:")
-    print(f"{formula} = {y}")
+if solution:
+    parts = build_formula(solution_tokens, x_value=solution_x)
+    formula_str = stringify(parts, solution_ops)
+    if solution_x is not None:
+        print(f"Найдено: x = {solution_x}")
+        print(f"Формула: {formula_str} = {y}")
+    else:
+        print("Найдена формула без x:")
+        print(f"{formula_str} = {y}")
 else:
-    print("Решение не найдено в установленных ограничениях (см. max_scalar_loops).")
+    print("Решения не найдено в заданном диапазоне и наборе выражений.")
 
-print(f"Диапазон операндов: [{rng_start}, {rng_end}]")
-print(f"Макс. скалярных итераций: {max_scalar_loops:,}")
+print(f"Пул констант: {CONST_POOL}")
+print(f"Длина выражений: 1..5")
+print(f"Диапазон X: [{start}, {end}]")
+print(f"Проверено выражений (комбинаций): ~{checked_exprs:,}")
 print(f"Время: {fmt_time(elapsed)}")
