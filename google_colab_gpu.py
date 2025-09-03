@@ -1,13 +1,19 @@
 import time
 import itertools
 import torch
+import threading
+from threading import Lock
+
+myLock = threading.Lock()
+
+script_path = "/content/drive/My Drive/ludmila/ludmila"
 
 # ---------------- ПАРАМЕТРЫ ----------------
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Устройство:", device)
 
 y = 4211
-start, end = -1000, 1000          # диапазон X; можешь увеличить
+start, end = -10, 10          # диапазон X; можешь увеличить
 dtype = torch.int64
 
 # Пул операндов: 'x' плюс константы (сюда добавляй свои числа)
@@ -92,6 +98,12 @@ def stringify(parts, ops):
             out.append(str(p))
     return " ".join(out)
 
+def writeln(str):
+    myLock.acquire()
+    with open(script_path + "/log.txt", 'a', encoding='utf-8') as the_file:
+        the_file.write(str + "\n")
+    myLock.release()
+
 # ---------------- ПОИСК ----------------
 if device == 'cuda':
     torch.cuda.synchronize()
@@ -128,13 +140,17 @@ for length in range(1, 6):  # длина по операндам
                     x_found = int(x_vals[idx].item())
                     parts = build_formula(tokens, x_value=x_found)
                     formula_str = stringify(parts, ops)
-                    print(f"Найдено: x = {x_found} | {formula_str} = {y}")
+                    message = time.strftime("%d.%m.%Y %H:%M:%S") + f" Найдено: x = {x_found} | {formula_str} = {y}"
+                    print(message)
+                    writeln(message)
                     solutions_found += 1
             else:
                 # формула без x — либо совпала, либо нет (hits тогда будет полный диапазон)
                 parts = build_formula(tokens, x_value=None)
                 formula_str = stringify(parts, ops)
-                print("Найдена формула без x:", f"{formula_str} = {y}")
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + f" Найдена формула без x:{formula_str} = {y}"
+                print(message)
+                writeln(message)
                 solutions_found += 1
                 # без x дальнейшие x не влияют — достаточно один раз сообщить
 
