@@ -62,7 +62,7 @@ Performance on CPU:
 
 Performance on GPU:
 - Linear equation solved in 0.27 seconds (5 characters) `v|x0;o|*;v|x1;o|+;v|x2`
-- Pythagorean theorem solved in TODO seconds (8 characters) `bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5`
+- Pythagorean theorem solved in 168 seconds (8 characters) `bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5`
 
 ## Purpose
 The main goal of this script is to solve unsolved mathematical problems:  
@@ -83,12 +83,14 @@ But not all of them can be represented as datasets.
 c:\Python311\python d:\python\maths\ludmila.py
 ```
 - The result will be in the console and also in the log file `log.txt`.
+- To run [google_colab_gpu.py](google_colab_gpu.py) use google colab notebook
 
 ## Files
 - [ludmila.py](ludmila.py) – CPU
 - [ludmila_processpoll.py](ludmila_processpoll.py) – CPU multiprocessing
 - [google_colab.py](google_colab.py) – CPU Google Colab
 - [google_colab_processpoll.py](google_colab_processpoll.py) – CPU Google Colab multiprocessing  
+- [google_colab_gpu.py](google_colab_gpu.py) - GPU google colab (recommended)
 
 ## Discussions on Mathematician & Programmer Forums
 - [linux.org.ru](https://www.linux.org.ru/forum/general/16478781)

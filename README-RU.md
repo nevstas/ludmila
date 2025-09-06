@@ -63,7 +63,7 @@ y = x0 * x1 + x2
 
 Производительность на GPU:
 - Линейное уравнение решается за 0.27 секунд (5 символов) v|x0;o|*;v|x1;o|+;v|x2 
-- Теорема пифагора решается за TODO секунд (8 символов) bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
+- Теорема пифагора решается за 168 секунд (8 символов) bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
 
 ## Задачи
 
@@ -85,13 +85,15 @@ y = x0 * x1 + x2
 c:\Python311\python d:\python\maths\ludmila.py
 ```
 - Результат будет в консоле, а так же в лог файле log.txt
+- Для запуска [google_colab_gpu.py](google_colab_gpu.py) используйте блокнот google colab
 
 ## Файлы
 
 - [ludmila.py](ludmila.py) - CPU
 - [ludmila_processpoll.py](ludmila_processpoll.py) - CPU multiprocessing
 - [google_colab.py](google_colab.py) - CPU google colab
-- [google_colab_processpoll.py](google_colab_processpoll.py) - CPU google colab multiprocessing  
+- [google_colab_processpoll.py](google_colab_processpoll.py) - CPU google colab multiprocessing
+- [google_colab_gpu.py](google_colab_gpu.py) - GPU google colab (recommended)
 
 ## Обсуждение на форумах математиков и программистов
 
