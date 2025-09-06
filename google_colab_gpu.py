@@ -225,8 +225,13 @@ x_vals = torch.arange(start, end + 1, dtype=dtype, device=device)
 
 OPERAND_POOL_BASE = ['x'] + [str(c) for c in CONST_POOL_BASE]
 
+# stats:
 checked_exprs = 0
 solutions_found_global = 0  # сколько "универсальных" формул нашли и залогировали
+attempted_eqs_total_base = 0                  # (2a) скалярных проверок f(x)=y на базовом наборе
+attempted_eqs_by_len_base = {L: 0 for L in range(1, 6)}
+
+time_total_start = time.time()
 
 for length in range(1, 6):  # длина по операндам
     # все последовательности операндов
@@ -238,11 +243,16 @@ for length in range(1, 6):  # длина по операндам
             ops_list = itertools.product('+-*/', repeat=length - 1)
 
         for ops in ops_list:
-            checked_exprs += 1
-
             # Считаем на БАЗОВОМ наборе (как раньше)
             res, valid, has_x = eval_expr_tokens(tokens, ops, x_vals)
             hits = torch.nonzero(valid & (res == y_base), as_tuple=False).flatten()
+
+            n_valid_base = int(valid.sum().item())
+
+            # stats:
+            checked_exprs += 1
+            attempted_eqs_total_base += n_valid_base
+            attempted_eqs_by_len_base[length] += n_valid_base
 
             if hits.numel() == 0:
                 continue
@@ -258,10 +268,9 @@ for length in range(1, 6):  # длина по операндам
             x_found_base = int(x_vals[hits[0]].item()) if has_x else None
             parts = build_formula(tokens, x_value=x_found_base)
             formula_str = stringify(parts, ops)
-            message = (
-                time.strftime("%d.%m.%Y %H:%M:%S")
-                + f" Универсальная формула: {formula_str} = y  | проверено наборов: {len(dataset)}"
-            )
+            time_total = time.time() - time_total_start
+            message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + formula_str + " at " + str(round(time_total, 2)) + " seconds"
+
             print(message)
             writeln(message)
             solutions_found_global += 1
