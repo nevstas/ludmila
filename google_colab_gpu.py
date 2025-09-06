@@ -161,10 +161,18 @@ def stringify(parts, ops):
     op_iter = iter(ops)
     for p in parts:
         if p is None:
-            out.append(next(op_iter))
+            try:
+                out.append(next(op_iter))
+            except StopIteration:
+                # На всякий случай, но обычно не попадём сюда
+                pass
         else:
             out.append(str(p))
+    # Если остались операторы (например, финальный унарный ^0.5) — добавим их в конец
+    for sym in op_iter:
+        out.append(sym)
     return " ".join(out)
+
 
 def writeln(str):
     myLock.acquire()
