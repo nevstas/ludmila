@@ -59,17 +59,50 @@ def operand_tensor(token, x_vals):
 
 def eval_expr_tokens(tokens, ops, x_vals):
     has_x = any(tok == 'x' for tok in tokens)
+
+    # База для тензоров: в случае без x — длина 1, потом расширим
     if has_x:
-        res = operand_tensor(tokens[0], x_vals)
+        base = x_vals
         valid = torch.ones_like(x_vals, dtype=torch.bool)
     else:
-        dummy = torch.tensor([0], device=x_vals.device, dtype=x_vals.dtype)
-        res = operand_tensor(tokens[0], dummy)[:1]
+        base = torch.tensor([0], device=x_vals.device, dtype=x_vals.dtype)
         valid = torch.ones(1, dtype=torch.bool, device=x_vals.device)
 
-    for sym, tok in zip(ops, tokens[1:]):
-        b = operand_tensor(tok, x_vals if has_x else res)
+    # Преобразуем операнды в тензоры одинаковой формы
+    vals = [operand_tensor(tok, base) for tok in tokens]
+
+    # ---- Первый проход: * и / ----
+    vals2 = [vals[0]]
+    ops2 = []
+    for i, sym in enumerate(ops):
+        b = vals[i + 1]
+        if sym in ('*', '/'):
+            fn = OPS[sym]
+            cur, v_step = fn(vals2[-1], b)
+            vals2[-1] = cur
+            valid = valid & v_step
+            if has_x and not valid.any():
+                break
+            if not has_x and not bool(valid.item()):
+                break
+        else:
+            ops2.append(sym)
+            vals2.append(b)
+
+    # Ранний выход, если все отвалилось на /0 и т.п.
+    if has_x and not valid.any():
+        # Вернем заглушки нужной формы
+        return torch.zeros_like(x_vals), torch.zeros_like(x_vals, dtype=torch.bool), has_x
+    if not has_x and not bool(valid.item()):
+        out = torch.zeros_like(x_vals)
+        msk = torch.zeros_like(x_vals, dtype=torch.bool)
+        return out, msk, has_x
+
+    # ---- Второй проход: + и - ----
+    res = vals2[0]
+    for i, sym in enumerate(ops2):
         fn = OPS[sym]
+        b = vals2[i + 1]
         res, v_step = fn(res, b)
         valid = valid & v_step
         if has_x and not valid.any():
@@ -77,11 +110,13 @@ def eval_expr_tokens(tokens, ops, x_vals):
         if not has_x and not bool(valid.item()):
             break
 
+    # Для выражений без x развернем до размера x_vals
     if not has_x:
         res = res.expand_as(x_vals)
         valid = valid.expand_as(x_vals)
 
     return res, valid, has_x
+
 
 def build_formula(tokens, x_value=None):
     parts = []
