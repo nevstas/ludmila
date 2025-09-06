@@ -19,10 +19,6 @@ print("Устройство:", device)
 start, end = -10, 10
 dtype = torch.int64
 
-# Базовый (первый) набор для первичного поиска
-y_base = 3235
-CONST_POOL_BASE = [51, 62, 73]
-
 # ---------------- УТИЛИТЫ ----------------
 def fmt_time(t):
     ms = int((t % 1) * 1000)
@@ -225,12 +221,8 @@ if not dataset:
     raise RuntimeError(f"Датасет пуст или не прочитан: {dataset_path}")
 
 # Первый набор — базовый для первичного поиска
-y_base_file, consts_base_file = dataset[0]
-# Проверяем согласованность с заданными вручную
-if y_base_file != y_base or consts_base_file != CONST_POOL_BASE:
-    # Не останавливаем работу: просто используем то, что лежит в файле как базу поиска
-    y_base = y_base_file
-    CONST_POOL_BASE = consts_base_file
+# CHANGED: без проверок и сравнений — просто берем первую строку из файла
+y_base, CONST_POOL_BASE = dataset[0]  # CHANGED
 
 x_vals = torch.arange(start, end + 1, dtype=dtype, device=device)
 
