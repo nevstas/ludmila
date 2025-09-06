@@ -9,19 +9,19 @@ myLock = threading.Lock()
 script_path = "/content/drive/My Drive/ludmila/ludmila"
 
 dataset_id = 1
-
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
 # ---------------- ПАРАМЕТРЫ ----------------
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Устройство:", device)
 
-y = 3235
-start, end = -10, 10          # диапазон X; можешь увеличить
+# Диапазон X
+start, end = -10, 10
 dtype = torch.int64
 
-# Пул операндов: 'x' плюс константы (сюда добавляй свои числа)
-CONST_POOL = [51, 62, 73]
+# Базовый (первый) набор для первичного поиска
+y_base = 3235
+CONST_POOL_BASE = [51, 62, 73]
 
 # ---------------- УТИЛИТЫ ----------------
 def fmt_time(t):
@@ -89,7 +89,7 @@ def eval_expr_tokens(tokens, ops, x_vals):
             ops2.append(sym)
             vals2.append(b)
 
-    # Ранний выход, если все отвалилось на /0 и т.п.
+    # Ранний выход, если все отвалилось
     if has_x and not valid.any():
         # Вернем заглушки нужной формы
         return torch.zeros_like(x_vals), torch.zeros_like(x_vals, dtype=torch.bool), has_x
@@ -143,21 +143,105 @@ def writeln(str):
         the_file.write(str + "\n")
     myLock.release()
 
+def load_dataset(path):
+    """
+    Ожидает строки формата:
+    y<TAB/SPACE>c1<TAB/SPACE>c2<TAB/SPACE>c3
+    Возвращает список: [(y, [c1, c2, c3]), ...]
+    """
+    ds = []
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            if len(parts) < 4:
+                continue
+            yv = int(parts[0])
+            c1 = int(parts[1]); c2 = int(parts[2]); c3 = int(parts[3])
+            ds.append((yv, [c1, c2, c3]))
+    return ds
+
+# --- Маппинг констант по индексам (ключ к универсальной проверке) ---
+def make_const_index_map(const_pool):
+    """
+    Возвращает dict: {"51": 0, "62": 1, "73": 2} для текущего пула.
+    """
+    return {str(v): i for i, v in enumerate(const_pool)}
+
+def remap_tokens_to_target_consts(tokens, base_const_pool, target_consts):
+    """
+    Переносит структуру tokens, заменяя константы из базового пула
+    на соответствующие константы target_consts по ИНДЕКСУ.
+    Пример: tokens = ['x','*','51','+','73'] при target=[52,63,74]
+    -> ['x','*','52','+','74']
+    """
+    idx_map = make_const_index_map(base_const_pool)
+    out = []
+    for tok in tokens:
+        if tok == 'x':
+            out.append('x')
+        else:
+            # это константа из базового пула
+            k = idx_map.get(tok, None)
+            if k is None:
+                # Защита: если в tokens неожиданно есть число не из пула
+                out.append(tok)
+            else:
+                out.append(str(target_consts[k]))
+    return out
+
+def validate_formula_on_all_sets(tokens_base, ops):
+    """
+    Проверяет формулу (структура tokens_base + ops), подобранную на первом наборе,
+    на всех наборах датасета. Для каждого набора подставляет его константы
+    по индексам и проверяет существование хотя бы одного x в диапазоне,
+    чтобы res == y набора при валидных операциях.
+    Возвращает (ok, xs_per_set) — ok: bool; xs_per_set: список найденных x или None.
+    """
+    xs_demo = []  # для информации: какие x нашлись на наборах
+    for (y_target, consts_target) in dataset:
+        # Переносим токены на константы этого набора
+        tokens_target = remap_tokens_to_target_consts(tokens_base, CONST_POOL_BASE, consts_target)
+        # Считаем
+        res, valid, has_x = eval_expr_tokens(tokens_target, ops, x_vals)
+        hits = torch.nonzero(valid & (res == y_target), as_tuple=False).flatten()
+        if hits.numel() == 0:
+            return False, None
+        # Сохраним один демонстрационный x
+        xs_demo.append(int(x_vals[hits[0]].item()) if has_x else None)
+    return True, xs_demo
+
 # ---------------- ПОИСК ----------------
 if device == 'cuda':
     torch.cuda.synchronize()
 t0 = time.perf_counter()
 
+# Загружаем весь датасет
+dataset_path = script_path + "/datasets/" + dataset_filename
+dataset = load_dataset(dataset_path)
+if not dataset:
+    raise RuntimeError(f"Датасет пуст или не прочитан: {dataset_path}")
+
+# Первый набор — базовый для первичного поиска
+y_base_file, consts_base_file = dataset[0]
+# Проверяем согласованность с заданными вручную
+if y_base_file != y_base or consts_base_file != CONST_POOL_BASE:
+    # Не останавливаем работу: просто используем то, что лежит в файле как базу поиска
+    y_base = y_base_file
+    CONST_POOL_BASE = consts_base_file
+
 x_vals = torch.arange(start, end + 1, dtype=dtype, device=device)
 
-OPERAND_POOL = ['x'] + [str(c) for c in CONST_POOL]
+OPERAND_POOL_BASE = ['x'] + [str(c) for c in CONST_POOL_BASE]
 
 checked_exprs = 0
-solutions_found = 0
+solutions_found_global = 0  # сколько "универсальных" формул нашли и залогировали
 
 for length in range(1, 6):  # длина по операндам
     # все последовательности операндов
-    for tokens in itertools.product(OPERAND_POOL, repeat=length):
+    for tokens in itertools.product(OPERAND_POOL_BASE, repeat=length):
         # все последовательности операций соответствующей длины
         if length == 1:
             ops_list = [()]
@@ -167,31 +251,34 @@ for length in range(1, 6):  # длина по операндам
         for ops in ops_list:
             checked_exprs += 1
 
+            # Считаем на БАЗОВОМ наборе (как раньше)
             res, valid, has_x = eval_expr_tokens(tokens, ops, x_vals)
-            hits = torch.nonzero(valid & (res == y), as_tuple=False).flatten()
+            hits = torch.nonzero(valid & (res == y_base), as_tuple=False).flatten()
 
             if hits.numel() == 0:
                 continue
 
-            # Печатаем решения сразу по мере нахождения
-            if has_x:
-                for idx in hits.tolist():
-                    x_found = int(x_vals[idx].item())
-                    parts = build_formula(tokens, x_value=x_found)
-                    formula_str = stringify(parts, ops)
-                    message = time.strftime("%d.%m.%Y %H:%M:%S") + f" Найдено: x = {x_found} | {formula_str} = {y}"
-                    print(message)
-                    writeln(message)
-                    solutions_found += 1
-            else:
-                # формула без x — либо совпала, либо нет (hits тогда будет полный диапазон)
-                parts = build_formula(tokens, x_value=None)
-                formula_str = stringify(parts, ops)
-                message = time.strftime("%d.%m.%Y %H:%M:%S") + f" Найдена формула без x:{formula_str} = {y}"
-                print(message)
-                writeln(message)
-                solutions_found += 1
-                # без x дальнейшие x не влияют — достаточно один раз сообщить
+            # Раньше мы сразу писали в лог. Теперь — сперва валидируем на ВСЕХ наборах.
+            ok, xs_demo = validate_formula_on_all_sets(list(tokens), ops)
+            if not ok:
+                # Формула не универсальна — пропускаем без логов
+                continue
+
+            # Универсальная формула найдена — логируем ОДИН раз
+            # Покажем формулу, подставив x из первого попадания на базовом наборе
+            x_found_base = int(x_vals[hits[0]].item()) if has_x else None
+            parts = build_formula(tokens, x_value=x_found_base)
+            formula_str = stringify(parts, ops)
+            message = (
+                time.strftime("%d.%m.%Y %H:%M:%S")
+                + f" Универсальная формула: {formula_str} = y  | проверено наборов: {len(dataset)}"
+            )
+            print(message)
+            writeln(message)
+            solutions_found_global += 1
+            # Можно НЕ прерывать поиск — пусть находит альтернативные универсальные формулы
+            # Если хотите остановить на первой — раскомментируйте следующую строку:
+            # raise SystemExit
 
 if device == 'cuda':
     torch.cuda.synchronize()
@@ -200,13 +287,13 @@ t1 = time.perf_counter()
 # ---------------- ВЫВОД ----------------
 elapsed = t1 - t0
 
-if solutions_found == 0:
-    print("Решения не найдено в заданном диапазоне и наборе выражений.")
+if solutions_found_global == 0:
+    print("Универсальных решений не найдено в заданном диапазоне и наборе выражений.")
 else:
-    print(f"Всего решений: {solutions_found}")
+    print(f"Всего универсальных формул: {solutions_found_global}")
 
-print(f"Пул констант: {CONST_POOL}")
+print(f"Базовый пул констант: {CONST_POOL_BASE}")
 print(f"Длина выражений: 1..5")
 print(f"Диапазон X: [{start}, {end}]")
-print(f"Проверено выражений (комбинаций): ~{checked_exprs:,}")
+print(f"Проверено выражений (комбинаций) на базовом наборе: ~{checked_exprs:,}")
 print(f"Время: {fmt_time(elapsed)}")
