@@ -76,21 +76,20 @@ But not all of them can be represented as datasets.
 - Add datasets for other unsolved mathematical problems.
 
 ## How to Run
-- Set the variable `dataset_id` to the dataset ID (1 – linear, 2 – Pythagoras theorem, 3 – prime number series).  
-  To add a dataset for a new equation, place the file in the `datasets` folder (tab separator; first element is `y`, the rest are `x`).
+- Set the variable `dataset_id` to the dataset ID (1 – linear, 2 – Pythagoras theorem, 3 – prime number series). To add a dataset for a new equation, place the file in the `datasets` folder (tab separator; first element is `y`, the rest are `x`).
 - Run the file `ludmila.py` with the command:
 ```
 c:\Python311\python d:\python\maths\ludmila.py
 ```
 - The result will be in the console and also in the log file `log.txt`.
-- To run [google_colab_gpu.py](google_colab_gpu.py) use google colab notebook
+- To run [google_colab_gpu.py](google_colab_gpu.py) use google colab notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
 
 ## Files
 - [ludmila.py](ludmila.py) – CPU
 - [ludmila_processpoll.py](ludmila_processpoll.py) – CPU multiprocessing
 - [google_colab.py](google_colab.py) – CPU Google Colab
 - [google_colab_processpoll.py](google_colab_processpoll.py) – CPU Google Colab multiprocessing  
-- [google_colab_gpu.py](google_colab_gpu.py) - GPU google colab (recommended)
+- [google_colab_gpu.py](google_colab_gpu.py) - GPU Google Colab (recommended), also see notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
 
 ## Discussions on Mathematician & Programmer Forums
 - [linux.org.ru](https://www.linux.org.ru/forum/general/16478781)
