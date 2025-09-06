@@ -43,7 +43,38 @@ def op_div(a, b):
         out[~valid] = 0
     return out, valid
 
-OPS = {'+': op_add, '-': op_sub, '*': op_mul, '/': op_div}
+def op_pow2(a, _b_ignored):
+    # (a)^2, всегда валидно
+    return a * a, torch.ones_like(a, dtype=torch.bool)
+
+def op_sqrt(a, _b_ignored):
+    # sqrt(a) только для a >= 0 и только если a — идеальный квадрат
+    valid = (a >= 0)
+
+    # получаем целочисленный корень
+    r = torch.sqrt(a.float()).to(torch.int64)
+
+    # проверяем точность: r*r == a
+    valid = valid & ((r * r) == a)
+
+    out = torch.empty_like(a)
+    if valid.any():
+        out[valid] = r[valid]
+    if (~valid).any():
+        out[~valid] = 0
+    return out, valid
+
+
+OPS = {
+    '+': op_add,
+    '-': op_sub,
+    '*': op_mul,
+    '/': op_div,
+    '^2': op_pow2,
+    '^0.5': op_sqrt,
+}
+
+OPS_FIRST_PASS = {'*', '/', '^2'}
 
 def operand_tensor(token, x_vals):
     if token == 'x':
@@ -53,8 +84,6 @@ def operand_tensor(token, x_vals):
 
 def eval_expr_tokens(tokens, ops, x_vals):
     has_x = any(tok == 'x' for tok in tokens)
-
-    # База для тензоров: в случае без x — длина 1, потом расширим
     if has_x:
         base = x_vals
         valid = torch.ones_like(x_vals, dtype=torch.bool)
@@ -62,55 +91,61 @@ def eval_expr_tokens(tokens, ops, x_vals):
         base = torch.tensor([0], device=x_vals.device, dtype=x_vals.dtype)
         valid = torch.ones(1, dtype=torch.bool, device=x_vals.device)
 
-    # Преобразуем операнды в тензоры одинаковой формы
     vals = [operand_tensor(tok, base) for tok in tokens]
 
-    # ---- Первый проход: * и / ----
+    # --- Первый проход: *, /, ^2 ---
     vals2 = [vals[0]]
     ops2 = []
+    trailing_sqrt = False
+    n_ops = len(ops)
+
     for i, sym in enumerate(ops):
         b = vals[i + 1]
-        if sym in ('*', '/'):
+        is_last = (i == n_ops - 1)
+        if sym in OPS_FIRST_PASS:
             fn = OPS[sym]
             cur, v_step = fn(vals2[-1], b)
             vals2[-1] = cur
             valid = valid & v_step
-            if has_x and not valid.any():
-                break
-            if not has_x and not bool(valid.item()):
-                break
+            if has_x and not valid.any(): break
+            if not has_x and not bool(valid.item()): break
+        elif sym == '^0.5' and is_last:
+            # отложим sqrt на самый конец (после + и -)
+            trailing_sqrt = True
+            # IMPORTANT: не добавляем b, он "фиктивный" для унарной операции
         else:
+            # + или - (и любой другой оператор, если решите расширять)
             ops2.append(sym)
             vals2.append(b)
 
-    # Ранний выход, если все отвалилось
+    # Ранний выход
     if has_x and not valid.any():
-        # Вернем заглушки нужной формы
         return torch.zeros_like(x_vals), torch.zeros_like(x_vals, dtype=torch.bool), has_x
     if not has_x and not bool(valid.item()):
         out = torch.zeros_like(x_vals)
         msk = torch.zeros_like(x_vals, dtype=torch.bool)
         return out, msk, has_x
 
-    # ---- Второй проход: + и - ----
+    # --- Второй проход: + и - ---
     res = vals2[0]
     for i, sym in enumerate(ops2):
         fn = OPS[sym]
         b = vals2[i + 1]
         res, v_step = fn(res, b)
         valid = valid & v_step
-        if has_x and not valid.any():
-            break
-        if not has_x and not bool(valid.item()):
-            break
+        if has_x and not valid.any(): break
+        if not has_x and not bool(valid.item()): break
 
-    # Для выражений без x развернем до размера x_vals
+    # --- Отложенный sqrt в самом конце ---
+    if trailing_sqrt:
+        res, v_step = OPS['^0.5'](res, res)   # b игнорируется
+        valid = valid & v_step
+
     if not has_x:
         res = res.expand_as(x_vals)
         valid = valid.expand_as(x_vals)
 
     return res, valid, has_x
-
 
 def build_formula(tokens, x_value=None):
     parts = []
@@ -249,10 +284,12 @@ for length in range(1, 6):  # длина по операндам
     # все последовательности операндов
     for tokens in itertools.product(OPERAND_POOL_BASE, repeat=length):
         # все последовательности операций соответствующей длины
+        OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']
+
         if length == 1:
             ops_list = [()]
         else:
-            ops_list = itertools.product('+-*/', repeat=length - 1)
+            ops_list = itertools.product(OPS_ALPHABET, repeat=length - 1)
 
         for ops in ops_list:
             # Считаем на БАЗОВОМ наборе (как раньше)
