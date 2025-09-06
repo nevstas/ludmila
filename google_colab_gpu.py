@@ -11,7 +11,6 @@ script_path = "/content/drive/My Drive/ludmila/ludmila"
 dataset_id = 1
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
-# ---------------- ПАРАМЕТРЫ ----------------
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Устройство:", device)
 
@@ -19,7 +18,6 @@ print("Устройство:", device)
 start, end = -10, 10
 dtype = torch.int64
 
-# ---------------- УТИЛИТЫ ----------------
 def fmt_time(t):
     ms = int((t % 1) * 1000)
     sec = int(t) % 60
@@ -209,7 +207,6 @@ def validate_formula_on_all_sets(tokens_base, ops):
         xs_demo.append(int(x_vals[hits[0]].item()) if has_x else None)
     return True, xs_demo
 
-# ---------------- ПОИСК ----------------
 if device == 'cuda':
     torch.cuda.synchronize()
 t0 = time.perf_counter()
