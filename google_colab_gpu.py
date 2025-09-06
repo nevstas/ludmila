@@ -12,7 +12,7 @@ dataset_id = 1
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print("Устройство:", device)
+print("Device:", device)
 
 # Диапазон X
 start, end = -10, 10
