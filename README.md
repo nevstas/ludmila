@@ -54,16 +54,15 @@ y = x0 * x1 + x2
 
 As a result, the dataset `(3235  51  62  73)` will produce a match, then this formula is tested on all datasets in `data1.txt` (100 total). If all 100 datasets pass, the equation is considered solved.
 
-## Optimization
-Since it makes no sense to have, for example, two `+` operators next to each other, concatenation rules define what can be next to what.  
-This increased the script’s speed by 15 times.  
-The concatenation rules are found in variable `types_of_elements`.
-
 ## Performance
 Performance on CPU:
 
 - Linear equation is solved in 7 seconds (5 characters): `v|x0;o|*;v|x1;o|+;v|x2`
 - Pythagoras theorem is solved in 8100 seconds (8 characters): `bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5`
+
+Performance on GPU:
+- Linear equation solved in 0.27 seconds (5 characters) `v|x0;o|*;v|x1;o|+;v|x2`
+- Pythagorean theorem solved in TODO seconds (8 characters) `bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5`
 
 ## Purpose
 The main goal of this script is to solve unsolved mathematical problems:  
@@ -73,7 +72,6 @@ The main goal of this script is to solve unsolved mathematical problems:
 But not all of them can be represented as datasets.
 
 ## To Do
-- Rewrite to use GPU instead of CPU
 - Add more mathematical operations – sin, cos, tg, ctg, π, e, log (performance will drop, but the probability of finding a formula will increase).
 - Add datasets for other unsolved mathematical problems.
 

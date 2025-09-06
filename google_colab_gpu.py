@@ -8,7 +8,7 @@ myLock = threading.Lock()
 
 script_path = "/content/drive/My Drive/ludmila/ludmila"
 
-dataset_id = 1
+dataset_id = 2
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -140,8 +140,10 @@ def writeln(str):
 def load_dataset(path):
     """
     Ожидает строки формата:
-    y<TAB/SPACE>c1<TAB/SPACE>c2<TAB/SPACE>c3
-    Возвращает список: [(y, [c1, c2, c3]), ...]
+    y [c1 c2 c3 ...]
+    Возвращает список: [(y, [c1, c2, c3, ...]), ...]
+    Количество констант после y может быть любым (в том числе 0).
+    Пустые строки игнорируются.
     """
     ds = []
     with open(path, 'r', encoding='utf-8') as f:
@@ -150,12 +152,22 @@ def load_dataset(path):
             if not line:
                 continue
             parts = line.split()
-            if len(parts) < 4:
+            # минимум — одно число (y)
+            try:
+                yv = int(parts[0])
+            except ValueError:
+                # строка некорректна — пропустим
                 continue
-            yv = int(parts[0])
-            c1 = int(parts[1]); c2 = int(parts[2]); c3 = int(parts[3])
-            ds.append((yv, [c1, c2, c3]))
+            consts = []
+            for p in parts[1:]:
+                try:
+                    consts.append(int(p))
+                except ValueError:
+                    # некорректный токен — пропустим только его
+                    continue
+            ds.append((yv, consts))
     return ds
+
 
 # --- Маппинг констант по индексам (ключ к универсальной проверке) ---
 def make_const_index_map(const_pool):
@@ -291,7 +303,6 @@ else:
     print(f"Всего универсальных формул: {solutions_found_global}")
 
 print(f"Базовый пул констант: {CONST_POOL_BASE}")
-print(f"Длина выражений: 1..5")
 print(f"Диапазон X: [{start}, {end}]")
 print(f"Проверено выражений (комбинаций) на базовом наборе: ~{checked_exprs:,}")
 print(f"Время: {fmt_time(elapsed)}")
