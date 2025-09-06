@@ -8,16 +8,20 @@ myLock = threading.Lock()
 
 script_path = "/content/drive/My Drive/ludmila/ludmila"
 
+dataset_id = 1
+
+dataset_filename = "data" + str(dataset_id) + ".txt"
+
 # ---------------- ПАРАМЕТРЫ ----------------
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Устройство:", device)
 
-y = 4211
+y = 3235
 start, end = -10, 10          # диапазон X; можешь увеличить
 dtype = torch.int64
 
 # Пул операндов: 'x' плюс константы (сюда добавляй свои числа)
-CONST_POOL = [59, 70, 81]
+CONST_POOL = [51, 62, 73]
 
 # ---------------- УТИЛИТЫ ----------------
 def fmt_time(t):
