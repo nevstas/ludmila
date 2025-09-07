@@ -3,6 +3,7 @@ import itertools
 import torch
 import threading
 from threading import Lock
+from collections import defaultdict
 
 myLock = threading.Lock()
 
@@ -278,73 +279,75 @@ OPERAND_POOL_BASE = ['x'] + [str(c) for c in CONST_POOL_BASE]
 
 # stats:
 checked_exprs = 0
-solutions_found_global = 0  # how many "universal" formulas found and logged
-attempted_eqs_total_base = 0                  # (2a) scalar checks f(x)=y on the base set
-attempted_eqs_by_len_base = {L: 0 for L in range(1, 6)}
+solutions_found_global = 0
+attempted_eqs_total_base = 0
+attempted_eqs_by_len_base = defaultdict(int)  # CHANGED: вместо {L:0 for L in range(1,6)}
 
 time_total_start = time.time()
 
-for length in range(1, 6):  # operand length
-    # all operand sequences
-    for tokens in itertools.product(OPERAND_POOL_BASE, repeat=length):
-        # all operator sequences of corresponding length
-        OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']
+OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']  # MOVE: вне цикла
 
-        if length == 1:
-            ops_list = [()]
-        else:
-            ops_list = itertools.product(OPS_ALPHABET, repeat=length - 1)
+try:
+    # БЕСКОНЕЧНЫЙ ПЕРЕБОР ДЛИН: 1,2,3,4,5, ...
+    for length in itertools.count(1):  # CHANGED: вместо range(1, 6)
+        # все последовательности операндов длины `length`
+        for tokens in itertools.product(OPERAND_POOL_BASE, repeat=length):
 
-        for ops in ops_list:
-            # Compute on the BASE set (as before)
-            res, valid, has_x = eval_expr_tokens(tokens, ops, x_vals)
-            hits = torch.nonzero(valid & (res == y_base), as_tuple=False).flatten()
+            # все последовательности операторов соответствующей длины
+            if length == 1:
+                ops_list = [()]
+            else:
+                ops_list = itertools.product(OPS_ALPHABET, repeat=length - 1)
 
-            n_valid_base = int(valid.sum().item())
+            for ops in ops_list:
+                # Compute on the BASE set (as before)
+                res, valid, has_x = eval_expr_tokens(tokens, ops, x_vals)
+                hits = torch.nonzero(valid & (res == y_base), as_tuple=False).flatten()
 
-            # stats:
-            checked_exprs += 1
-            attempted_eqs_total_base += n_valid_base
-            attempted_eqs_by_len_base[length] += n_valid_base
+                n_valid_base = int(valid.sum().item())
 
-            if hits.numel() == 0:
-                continue
+                # stats:
+                checked_exprs += 1
+                attempted_eqs_total_base += n_valid_base
+                attempted_eqs_by_len_base[length] += n_valid_base  # длины растут без ограничений
 
-            # Previously we logged right away. Now — first validate on ALL sets.
-            ok, xs_demo, ok_mask = validate_formula_on_all_sets(list(tokens), ops)
-            if not ok:
-                # Formula is not universal — skip without logs
-                continue
+                if hits.numel() == 0:
+                    continue
 
-            # Universal formula found — log ONCE
-            # Show the formula with x substituted from the first hit on the base set
-            common_hits = torch.nonzero(ok_mask, as_tuple=False).flatten()
-            x_found_base = int(x_vals[common_hits[0]].item()) if common_hits.numel() > 0 else None
-            parts = build_formula(tokens, x_value=x_found_base)
-            formula_str = stringify(parts, ops)
-            time_total = time.time() - time_total_start
-            message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + formula_str + " at " + str(round(time_total, 2)) + " seconds"
+                ok, xs_demo, ok_mask = validate_formula_on_all_sets(list(tokens), ops)
+                if not ok:
+                    continue
 
-            print(message)
-            writeln(message)
-            solutions_found_global += 1
-            # We may NOT stop search — let it find alternative universal formulas
-            # If you want to stop at the first one — uncomment the next line:
-            # raise SystemExit
+                # Universal formula found — log ONCE
+                common_hits = torch.nonzero(ok_mask, as_tuple=False).flatten()
+                x_found_base = int(x_vals[common_hits[0]].item()) if common_hits.numel() > 0 else None
+                parts = build_formula(tokens, x_value=x_found_base)
+                formula_str = stringify(parts, ops)
+                time_total = time.time() - time_total_start
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + formula_str + " at " + str(round(time_total, 2)) + " seconds"
 
-if device == 'cuda':
-    torch.cuda.synchronize()
-t1 = time.perf_counter()
+                print(message)
+                writeln(message)
+                solutions_found_global += 1
 
-# ---------------- OUTPUT ----------------
-elapsed = t1 - t0
+        # (необязательно) периодический прогресс раз в N длин
+        # if length % 5 == 0:
+        #     print(f"[progress] length={length}, checked_exprs≈{checked_exprs:,}, solutions={solutions_found_global}")
 
-if solutions_found_global == 0:
-    print("No universal solutions found in the given range and set of expressions.")
-else:
-    print(f"Total universal formulas: {solutions_found_global}")
-
-print(f"Base constant pool: {CONST_POOL_BASE}")
-print(f"X range: [{start}, {end}]")
-print(f"Checked expressions (combinations) on the base set: ~{checked_exprs:,}")
-print(f"Time: {fmt_time(elapsed)}")
+except KeyboardInterrupt:
+    # Аккуратное завершение по Ctrl+C с выводом статистики
+    if device == 'cuda':
+        torch.cuda.synchronize()
+    elapsed = time.perf_counter() - t0
+    print("\nОстановлено пользователем (Ctrl+C). Итоги на текущий момент:")
+    if solutions_found_global == 0:
+        print("Пока универсальных формул не найдено.")
+    else:
+        print(f"Найдено универсальных формул: {solutions_found_global}")
+    print(f"Базовый набор констант: {CONST_POOL_BASE}")
+    print(f"Диапазон X: [{start}, {end}]")
+    print(f"Проверено комбинаций на базовом наборе: ~{checked_exprs:,}")
+    print(f"Время: {fmt_time(elapsed)}")
+    # Можно ещё вывести top-k длин:
+    # for L in sorted(attempted_eqs_by_len_base)[:20]:
+    #     print(f"len={L}: попыток равенства на базе = {attempted_eqs_by_len_base[L]}")
