@@ -1,21 +1,9 @@
 import time
 from threading import Lock
 import threading
-import multiprocessing
-import json
-import atexit
-import logging
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import Process
-import signal
-from contextlib import contextmanager
-import random
 import os
 import sys
 import warnings
-
-# logger = multiprocessing.log_to_stderr()
-# logger.setLevel(multiprocessing.SUBDEBUG)
 
 myLock = threading.Lock()
 
@@ -123,25 +111,6 @@ types_of_elements = {
         'allow_left': ['n', 'br', 'v'],
     },
 }
-
-with open(script_path + "/datasets/" + dataset_filename) as f:
-    dataset_plain = f.readlines()  # read the dataset (e.g., from file data1.txt). Example: "3235 51 62 73"
-
-dataset = []  # dataset contains elements like {'y': 3235, 'x': [51, 62, 73]} — first element is the solution y, second element is the input array x
-for dataset_plain_item in dataset_plain:
-    dataset_plain_item = dataset_plain_item.strip()
-    dataset_plain_item = dataset_plain_item.split("\t")
-    y = dataset_plain_item[0]
-    dataset_plain_item.pop(0)  # Delete the first element of the array (y), we don’t need it
-    x = dataset_plain_item
-    dataset.append({"y": y, "x": x})
-
-first_element_of_dataset = dataset[0]  # Takes from the large dataset (e.g., 100) the first element
-variable_elements = []
-for variable_count, f in enumerate(first_element_of_dataset['x']):
-    variable_elements.append("v|x" + str(variable_count))
-elements = elements + variable_elements  # add all 'x' to elements, their number can vary
-elements_len = len(elements)
 
 
 # Formats equations
@@ -296,90 +265,54 @@ def custom_to_decimal(arr):
         decimal += number * (elements_len ** index)
     return decimal
 
-@atexit.register
-def cleanup():
-    the_file.close()
 
-def get_tasks(fnc_num_tasks, fnc_equation_decimal_start, fnc_task_position, fnc_chunk):
-    print('get tasks ' + str(random.randint(1, 100)))
-    # Create multiple tasks for simultaneous processing
-    tasks = []
-    for _ in range(fnc_num_tasks):
-        position_decimal_start = fnc_equation_decimal_start + fnc_task_position * fnc_chunk
-        position_decimal_end = position_decimal_start + fnc_chunk
+def task(dataset):
+    global elements
+    global elements_len
+    global equation
+    first_element_of_dataset = dataset[0] # Takes from the large dataset (e.g., 100) the first element
+    variable_elements = []
+    for variable_count, f in enumerate(first_element_of_dataset['x']):
+        variable_elements.append("v|x" + str(variable_count))
+    elements = elements + variable_elements # add all 'x' to elements, their number can vary
+    elements_len = len(elements)
 
-        position_start = decimal_to_custom(position_decimal_start)
-        position_end = decimal_to_custom(position_decimal_end)
+    time_total_start = time.time()
+    time_stat = time.time()
+    equation_count = 0
+    while (True):
 
-        fnc_task_position += 1
-        tasks.append([position_start.copy(), position_end.copy(), position_decimal_start, position_decimal_end])
-    return [fnc_task_position, tasks]
+        equation_format = format(equation, first_element_of_dataset['x']) # format the equation
 
-def task(fnc_elements, fnc_variable_elements, fnc_time_total_start, fnc_dataset, fnc_first_element_of_dataset, fnc_position_start, fnc_position_end, fnc_position_decimal_start, fnc_position_decimal_end):
-    # print('task was started')
-    equation = fnc_position_start.copy()
-    while True:
-        equation_format = format(equation, fnc_first_element_of_dataset['x'])
+        #print(format_equation_to_human_view(equation))
+        # writeln(format_equation_to_human_view(equation))
 
-        if calc(equation_format, fnc_first_element_of_dataset['y']):
-            if calc_all(equation, fnc_dataset):
-                time_total = time.time() - fnc_time_total_start
-                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(
-                    dataset_id) + ": " + format_equation_to_human_view(equation) + " at " + str(
-                    round(time_total, 2)) + " seconds"
+        if calc(equation_format, first_element_of_dataset['y']): # if the equation is valid on one set of x and y
+
+            if calc_all(equation, dataset): # then check the equation on the large dataset (e.g., 100)
+                time_total = time.time() - time_total_start
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + format_equation_to_human_view(equation) + " at " + str(round(time_total, 2)) + " seconds"
                 writeln(message)
                 print(message)
 
         equation = equation_number_increment(equation)
-        equation_decimal = custom_to_decimal(equation)
 
-        if equation_decimal >= fnc_position_decimal_end:
-            # print("task was finished")
-            return
+        equation_count += 1
+        if equation_count % 100000 == 0:
+            speed = equation_count / (time.time() - time_stat)
+            print(f"Speed: {int(speed)} eq/s")
 
-if __name__ == '__main__':
-    time_total_start = time.time()
-    task_position = 0
+with open(script_path + "/datasets/" + dataset_filename) as f:
+    dataset_plain = f.readlines() # read the dataset (e.g., from file data1.txt). Example: "3235 51 62 73"
 
-    equation_start = equation
-    equation_decimal_start = custom_to_decimal(equation_start)
+dataset = [] # dataset contains elements like {'y': 3235, 'x': [51, 62, 73]} — first element is the solution y, second element is the input array x
+for dataset_plain_item in dataset_plain:
+    dataset_plain_item = dataset_plain_item.strip()
+    dataset_plain_item = dataset_plain_item.split("\t")
+    y = dataset_plain_item[0]
+    dataset_plain_item.pop(0) # Delete the first element of the array (y), we don’t need it
+    x = dataset_plain_item
+    dataset.append({"y": y, "x": x})
 
-    # equation_decimal_start = 2000000 #remove this
-
-    chunk = 10000000
-    completed_tasks = 0
-    threads = multiprocessing.cpu_count()
-    time_stat = time.time()
-
-    with ProcessPoolExecutor(max_workers=threads) as executor:
-        futures = []
-        try:
-            while True:
-                # Receive a list of tasks
-                tasks_fnc = get_tasks(20 * multiprocessing.cpu_count(), equation_decimal_start, task_position, chunk)  # Create more tasks to load all cores
-                task_position = tasks_fnc[0]
-                task_list = tasks_fnc[1]
-
-                # Add all tasks to the pool
-                for task_data in task_list:
-                    future = executor.submit(task, elements, variable_elements, time_total_start, dataset, first_element_of_dataset, task_data[0], task_data[1], task_data[2], task_data[3])
-                    futures.append(future)
-
-                # Waiting for some tasks to complete to avoid memory overflow
-                # Checking completed tasks and removing them from the list
-                for f in as_completed(futures):
-                    completed_tasks += 1
-                    equation_count = completed_tasks * chunk
-                    speed = equation_count / (time.time() - time_stat)
-                    print(f"Speed: {int(speed)} eq/s")
-                    futures.remove(f)
-        except:
-            print('Exeption')
-        finally:
-            # Wait for all remaining tasks to complete before exiting
-            for future in futures:
-                future.cancel()
-
-
-#c:\Python311\python d:\python\maths\ludmila_processpoll.py
-#python3 /home/nevep/web/nevep.ru/public_html/tmp/ludmila/ludmila_processpoll.py
+task(dataset) # call the main function
+#c:\Python311\python d:\python\maths\ludmila_cpu.py

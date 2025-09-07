@@ -77,20 +77,20 @@ y = x0 * x1 + x2
 
 ## Запуск
 - В переменной `dataset_id` указать id набора данных (1 - линейное, 2 - теорема пифагора, 3 - ряд простых чисел). Чтобы добавить dataset нового уравнения - поместите файл в папку `datasets` (разделитель tab; первый элемент y, остальные элементы это x)
-- Запустить файл `ludmila.py` командой:
+- Запустить файл `ludmila_cpu.py` командой:
 ```
-c:\Python311\python d:\python\maths\ludmila.py
+c:\Python311\python d:\python\maths\ludmila_cpu.py
 ```
 - Результат будет в консоле, а так же в лог файле `log.txt`
 - Для запуска GPU версии используйте [ludmila_gpu.py](ludmila_gpu.py)
 - Для запуска [google_colab_gpu.py](google_colab_gpu.py) используйте блокнот google colab [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
 
 ## Файлы
-- [ludmila.py](ludmila.py) - CPU
-- [ludmila_processpoll.py](ludmila_processpoll.py) - CPU multiprocessing
+- [ludmila_cpu.py](ludmila_cpu.py) - CPU
+- [ludmila_cpu_processpoll.py](ludmila_cpu_processpoll.py) - CPU multiprocessing
 - [ludmila_gpu.py](ludmila_gpu.py) - GPU (рекомендуется)
-- [google_colab.py](google_colab.py) - CPU Google Colab
-- [google_colab_processpoll.py](google_colab_processpoll.py) - CPU Google Colab multiprocessing
+- [google_colab_cpu.py](google_colab_cpu.py) - CPU Google Colab
+- [google_colab_cpu_processpoll.py](google_colab_cpu_processpoll.py) - CPU Google Colab multiprocessing
 - [google_colab_gpu.py](google_colab_gpu.py) - GPU Google Colab (рекомендуется), также смотрите [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
 
 ## Обсуждение на форумах математиков и программистов
