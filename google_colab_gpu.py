@@ -242,25 +242,21 @@ def remap_tokens_to_target_consts(tokens, base_const_pool, target_consts):
     return out
 
 def validate_formula_on_all_sets(tokens_base, ops):
-    """
-    Checks the formula (structure tokens_base + ops), selected on the first set,
-    on all sets of the dataset. For each set substitutes its constants
-    by indices and checks if there exists at least one x in the range
-    such that res == y of the set with valid operations.
-    Returns (ok, xs_per_set) — ok: bool; xs_per_set: list of found x or None.
-    """
-    xs_demo = []  # for info: which x were found on the sets
+    ok_mask = torch.ones_like(x_vals, dtype=torch.bool)
+    xs_demo = []
     for (y_target, consts_target) in dataset:
-        # Transfer tokens to constants of this set
         tokens_target = remap_tokens_to_target_consts(tokens_base, CONST_POOL_BASE, consts_target)
-        # Compute
         res, valid, has_x = eval_expr_tokens(tokens_target, ops, x_vals)
-        hits = torch.nonzero(valid & (res == y_target), as_tuple=False).flatten()
-        if hits.numel() == 0:
-            return False, None
-        # Save one demo x
-        xs_demo.append(int(x_vals[hits[0]].item()) if has_x else None)
-    return True, xs_demo
+        hit_mask = valid & (res == y_target)
+        ok_mask = ok_mask & hit_mask
+        if not ok_mask.any():
+            return False, None, ok_mask
+        hit_idx = torch.nonzero(hit_mask, as_tuple=False).flatten()
+        xs_demo.append(int(x_vals[hit_idx[0]].item()) if hit_idx.numel() > 0 else None)
+
+    return True, xs_demo, ok_mask
+
+
 
 if device == 'cuda':
     torch.cuda.synchronize()
@@ -315,14 +311,15 @@ for length in range(1, 6):  # operand length
                 continue
 
             # Previously we logged right away. Now — first validate on ALL sets.
-            ok, xs_demo = validate_formula_on_all_sets(list(tokens), ops)
+            ok, xs_demo, ok_mask = validate_formula_on_all_sets(list(tokens), ops)
             if not ok:
                 # Formula is not universal — skip without logs
                 continue
 
             # Universal formula found — log ONCE
             # Show the formula with x substituted from the first hit on the base set
-            x_found_base = int(x_vals[hits[0]].item()) if has_x else None
+            common_hits = torch.nonzero(ok_mask, as_tuple=False).flatten()
+            x_found_base = int(x_vals[common_hits[0]].item()) if common_hits.numel() > 0 else None
             parts = build_formula(tokens, x_value=x_found_base)
             formula_str = stringify(parts, ops)
             time_total = time.time() - time_total_start
