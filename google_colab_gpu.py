@@ -281,19 +281,19 @@ OPERAND_POOL_BASE = ['x'] + [str(c) for c in CONST_POOL_BASE]
 checked_exprs = 0
 solutions_found_global = 0
 attempted_eqs_total_base = 0
-attempted_eqs_by_len_base = defaultdict(int)  # CHANGED: вместо {L:0 for L in range(1,6)}
+attempted_eqs_by_len_base = defaultdict(int)
 
 time_total_start = time.time()
 
 OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']  # MOVE: вне цикла
 
 try:
-    # БЕСКОНЕЧНЫЙ ПЕРЕБОР ДЛИН: 1,2,3,4,5, ...
-    for length in itertools.count(1):  # CHANGED: вместо range(1, 6)
-        # все последовательности операндов длины `length`
+    # INFINITE LOOP OF LENGTHS: 1,2,3,4,5, ...
+    for length in itertools.count(1):  # CHANGED: instead of range(1, 6)
+        # all operand sequences of length `length`
         for tokens in itertools.product(OPERAND_POOL_BASE, repeat=length):
 
-            # все последовательности операторов соответствующей длины
+            # all operator sequences of the corresponding length
             if length == 1:
                 ops_list = [()]
             else:
@@ -309,7 +309,7 @@ try:
                 # stats:
                 checked_exprs += 1
                 attempted_eqs_total_base += n_valid_base
-                attempted_eqs_by_len_base[length] += n_valid_base  # длины растут без ограничений
+                attempted_eqs_by_len_base[length] += n_valid_base  # lengths grow without limits
 
                 if hits.numel() == 0:
                     continue
@@ -330,24 +330,17 @@ try:
                 writeln(message)
                 solutions_found_global += 1
 
-        # (необязательно) периодический прогресс раз в N длин
-        # if length % 5 == 0:
-        #     print(f"[progress] length={length}, checked_exprs≈{checked_exprs:,}, solutions={solutions_found_global}")
-
 except KeyboardInterrupt:
-    # Аккуратное завершение по Ctrl+C с выводом статистики
+    # Graceful termination by Ctrl+C with statistics output
     if device == 'cuda':
         torch.cuda.synchronize()
     elapsed = time.perf_counter() - t0
-    print("\nОстановлено пользователем (Ctrl+C). Итоги на текущий момент:")
+    print("\nStopped by user (Ctrl+C). Current results:")
     if solutions_found_global == 0:
-        print("Пока универсальных формул не найдено.")
+        print("No universal formulas found yet.")
     else:
-        print(f"Найдено универсальных формул: {solutions_found_global}")
-    print(f"Базовый набор констант: {CONST_POOL_BASE}")
-    print(f"Диапазон X: [{start}, {end}]")
-    print(f"Проверено комбинаций на базовом наборе: ~{checked_exprs:,}")
-    print(f"Время: {fmt_time(elapsed)}")
-    # Можно ещё вывести top-k длин:
-    # for L in sorted(attempted_eqs_by_len_base)[:20]:
-    #     print(f"len={L}: попыток равенства на базе = {attempted_eqs_by_len_base[L]}")
+        print(f"Universal formulas found: {solutions_found_global}")
+    print(f"Base constant set: {CONST_POOL_BASE}")
+    print(f"Range X: [{start}, {end}]")
+    print(f"Checked combinations on base set: ~{checked_exprs:,}")
+    print(f"Time: {fmt_time(elapsed)}")
