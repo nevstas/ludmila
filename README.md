@@ -82,11 +82,13 @@ But not all of them can be represented as datasets.
 c:\Python311\python d:\python\maths\ludmila.py
 ```
 - The result will be in the console and also in the log file `log.txt`.
+- To run the GPU version use [ludmila_gpu.py](ludmila_gpu.py)
 - To run [google_colab_gpu.py](google_colab_gpu.py) use google colab notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
 
 ## Files
 - [ludmila.py](ludmila.py) – CPU
 - [ludmila_processpoll.py](ludmila_processpoll.py) – CPU multiprocessing
+- [ludmila_gpu.py](ludmila_gpu.py) - GPU (recommended)
 - [google_colab.py](google_colab.py) – CPU Google Colab
 - [google_colab_processpoll.py](google_colab_processpoll.py) – CPU Google Colab multiprocessing  
 - [google_colab_gpu.py](google_colab_gpu.py) - GPU Google Colab (recommended), also see notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
