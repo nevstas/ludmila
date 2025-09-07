@@ -89,9 +89,9 @@ c:\Python311\python d:\python\maths\ludmila_cpu.py
 - [ludmila_cpu.py](ludmila_cpu.py) – CPU
 - [ludmila_cpu_processpoll.py](ludmila_cpu_processpoll.py) – CPU multiprocessing
 - [ludmila_gpu.py](ludmila_gpu.py) - GPU (recommended)
-- [google_colab_cpu.py](google_colab_cpu.py) – CPU Google Colab
-- [google_colab_cpu_processpoll.py](google_colab_cpu_processpoll.py) – CPU Google Colab multiprocessing  
-- [google_colab_gpu.py](google_colab_gpu.py) - GPU Google Colab (recommended), also see notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
+- [google_colab_cpu.py](google_colab_cpu.py) – Google Colab CPU
+- [google_colab_cpu_processpoll.py](google_colab_cpu_processpoll.py) – Google Colab CPU multiprocessing  
+- [google_colab_gpu.py](google_colab_gpu.py) - Google Colab GPU (recommended), also see notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
 
 ## Discussions on Mathematician & Programmer Forums
 - [linux.org.ru](https://www.linux.org.ru/forum/general/16478781)
