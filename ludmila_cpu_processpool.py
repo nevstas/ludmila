@@ -381,5 +381,5 @@ if __name__ == '__main__':
                 future.cancel()
 
 
-#c:\Python311\python d:\python\maths\ludmila_cpu_processpoll.py
-#python3 /home/nevep/web/nevep.ru/public_html/tmp/ludmila/ludmila_cpu_processpoll.py
+#c:\Python311\python d:\python\maths\ludmila_cpu_processpool.py
+#python3 /home/nevep/web/nevep.ru/public_html/tmp/ludmila/ludmila_cpu_processpool.py

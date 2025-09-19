@@ -87,10 +87,10 @@ c:\Python311\python d:\python\maths\ludmila_cpu.py
 
 ## Файлы
 - [ludmila_cpu.py](ludmila_cpu.py) - CPU
-- [ludmila_cpu_processpoll.py](ludmila_cpu_processpoll.py) - CPU multiprocessing
+- [ludmila_cpu_processpool.py](ludmila_cpu_processpool.py) - CPU multiprocessing
 - [ludmila_gpu.py](ludmila_gpu.py) - GPU (рекомендуется)
 - [google_colab_cpu.py](google_colab_cpu.py) - Google Colab CPU
-- [google_colab_cpu_processpoll.py](google_colab_cpu_processpoll.py) - Google Colab CPU multiprocessing
+- [google_colab_cpu_processpool.py](google_colab_cpu_processpool.py) - Google Colab CPU multiprocessing
 - [google_colab_gpu.py](google_colab_gpu.py) - Google Colab GPU (рекомендуется), также смотрите [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
 
 ## Обсуждение на форумах математиков и программистов
