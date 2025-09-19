@@ -35,7 +35,7 @@ script_path = "/content/drive/My Drive/ludmila/ludmila"
 # 3 series of prime numbers
 
 
-dataset_id = 1
+dataset_id = 2
 
 # File name with 'x' and 'y', for example if dataset_id = 1, dataset_filename will be 'data1.txt'
 dataset_filename = "data" + str(dataset_id) + ".txt"

@@ -9,7 +9,7 @@ myLock = threading.Lock()
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 
-dataset_id = 1
+dataset_id = 2
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
