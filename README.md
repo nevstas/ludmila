@@ -104,7 +104,10 @@ c:\Python311\python d:\python\maths\ludmila_cpu.py
 - [alexlarin.com](https://alexlarin.com/viewtopic.php?f=4&t=17347)
 - [math10.com](https://www.math10.com/ru/forum/viewtopic.php?f=42&t=3185)
 - [math.hashcode.ru](http://math.hashcode.ru/questions/226775/python-ludmila-%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%B8%D0%B5-%D0%BD%D0%B5%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%BD%D1%8B%D1%85-%D0%BC%D0%B0%D1%82%D0%B5%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D1%85-%D0%B7%D0%B0%D0%B4%D0%B0%D1%87-%D0%BC%D0%B5%D1%82%D0%BE%D0%B4%D0%BE%D0%BC-%D0%BF%D0%BE%D0%B4%D0%B1%D0%BE%D1%80%D0%B0)
+- [boinc.berkeley.edu](https://boinc.berkeley.edu/forum_thread.php?id=15575)
 
 ## Useful Links
 - [BOINC](https://en.wikipedia.org/wiki/BOINC)
 - [Volunteer Computing](https://en.wikipedia.org/wiki/Volunteer_computing)
+- [Google Colab](https://colab.research.google.com/signup)
+- [RunPod](https://www.runpod.io/pricing)
