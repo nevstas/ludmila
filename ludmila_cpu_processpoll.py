@@ -75,9 +75,9 @@ elements = [
     "br|)",
 
     # exponentiation: power of 2, power of 3, square root, cube root
-    # "e|**2",
+    "e|**2",
     # "e|**3",
-    # "e|**0.5",
+    "e|**0.5",
     # "e|**(1/3)",
 ]
 
