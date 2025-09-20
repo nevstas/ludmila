@@ -4,6 +4,7 @@ import torch
 import threading
 from threading import Lock
 import os
+from collections import defaultdict
 
 myLock = threading.Lock()
 
@@ -15,9 +16,34 @@ dataset_filename = "data" + str(dataset_id) + ".txt"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Device:", device)
 
-# X range
+REPEAT = 256   #1024–8192
 start, end = -10, 10
-dtype = torch.int64
+dtype = torch.int32
+
+BATCH_CACHE = None
+
+def _rebuild_batch_cache():
+    global BATCH_CACHE
+    x_stack, y_stack, const_table = build_batched_inputs(REPEAT)
+    BATCH_CACHE = {
+        "repeat": REPEAT,
+        "x": x_stack,
+        "y": y_stack,
+        "const": const_table,
+        "ncols": x_stack.shape[1],
+    }
+
+def get_batched_inputs():
+    global BATCH_CACHE
+    need = (
+        BATCH_CACHE is None
+        or BATCH_CACHE["repeat"] != REPEAT
+        or BATCH_CACHE["ncols"] != x_vals.numel() * REPEAT
+    )
+    if need:
+        _rebuild_batch_cache()
+    return BATCH_CACHE["x"], BATCH_CACHE["y"], BATCH_CACHE["const"]
+
 
 def fmt_time(t):
     ms = int((t % 1) * 1000)
@@ -35,13 +61,10 @@ def op_mul(a, b):
     return a * b, torch.ones_like(a, dtype=torch.bool)
 
 def op_div(a, b):
-    # strict integer divisibility and ban on division by 0
     valid = (b != 0) & (a.remainder(b) == 0)
     out = torch.empty_like(a)
-    if valid.any():
-        out[valid] = a[valid] // b[valid]
-    if (~valid).any():
-        out[~valid] = 0
+    out[valid] = torch.div(a[valid], b[valid], rounding_mode='trunc')
+    out[~valid] = 0
     return out, valid
 
 def op_pow2(a, _b_ignored):
@@ -49,20 +72,13 @@ def op_pow2(a, _b_ignored):
     return a * a, torch.ones_like(a, dtype=torch.bool)
 
 def op_sqrt(a, _b_ignored):
-    # sqrt(a) only for a >= 0 and only if a is a perfect square
     valid = (a >= 0)
-
-    # get integer root
-    r = torch.sqrt(a.float()).to(torch.int64)
-
-    # check accuracy: r*r == a
+    r = torch.sqrt(a.float()).to(a.dtype)
     valid = valid & ((r * r) == a)
 
     out = torch.empty_like(a)
-    if valid.any():
-        out[valid] = r[valid]
-    if (~valid).any():
-        out[~valid] = 0
+    out[valid] = r[valid]
+    out[~valid] = 0
     return out, valid
 
 
@@ -77,11 +93,17 @@ OPS = {
 
 OPS_FIRST_PASS = {'*', '/', '^2'}
 
+CONST_CACHE = {}
+
 def operand_tensor(token, x_vals):
     if token == 'x':
         return x_vals
-    else:
-        return torch.full_like(x_vals, int(token), dtype=x_vals.dtype, device=x_vals.device)
+    t = CONST_CACHE.get(token)
+    if t is None or t.shape != x_vals.shape or t.device != x_vals.device or t.dtype != x_vals.dtype:
+        t = torch.full_like(x_vals, int(token))
+        CONST_CACHE[token] = t
+    return t
+
 
 def eval_expr_tokens(tokens, ops, x_vals):
     has_x = any(tok == 'x' for tok in tokens)
@@ -108,8 +130,6 @@ def eval_expr_tokens(tokens, ops, x_vals):
             cur, v_step = fn(vals2[-1], b)
             vals2[-1] = cur
             valid = valid & v_step
-            if has_x and not valid.any(): break
-            if not has_x and not bool(valid.item()): break
         elif sym == '^0.5' and is_last:
             # postpone sqrt until the very end (after + and -)
             trailing_sqrt = True
@@ -119,14 +139,6 @@ def eval_expr_tokens(tokens, ops, x_vals):
             ops2.append(sym)
             vals2.append(b)
 
-    # Early exit
-    if has_x and not valid.any():
-        return torch.zeros_like(x_vals), torch.zeros_like(x_vals, dtype=torch.bool), has_x
-    if not has_x and not bool(valid.item()):
-        out = torch.zeros_like(x_vals)
-        msk = torch.zeros_like(x_vals, dtype=torch.bool)
-        return out, msk, has_x
-
     # --- Second pass: + and - ---
     res = vals2[0]
     for i, sym in enumerate(ops2):
@@ -134,8 +146,6 @@ def eval_expr_tokens(tokens, ops, x_vals):
         b = vals2[i + 1]
         res, v_step = fn(res, b)
         valid = valid & v_step
-        if has_x and not valid.any(): break
-        if not has_x and not bool(valid.item()): break
 
     # --- Deferred sqrt at the very end ---
     if trailing_sqrt:
@@ -242,26 +252,121 @@ def remap_tokens_to_target_consts(tokens, base_const_pool, target_consts):
                 out.append(str(target_consts[k]))
     return out
 
+def build_batched_inputs(REPEAT=1):
+    S = len(dataset)
+    N = x_vals.numel()
+
+    # [S, N]
+    x_stack = x_vals.unsqueeze(0).expand(S, N)
+    if REPEAT > 1:
+        x_stack = x_stack.repeat(1, REPEAT)  # [S, N*REPEAT]
+
+    y_vec = torch.tensor([y for (y, _) in dataset], device=device, dtype=dtype)
+    y_stack = y_vec.unsqueeze(1).expand(S, x_stack.shape[1])
+
+    const_table = {}
+    for idx, base_val in enumerate(CONST_POOL_BASE):
+        per_set = torch.tensor([consts[idx] for (_, consts) in dataset],
+                               device=device, dtype=dtype)                 # [S]
+        const_table[str(base_val)] = per_set.unsqueeze(1).expand_as(x_stack) # [S, N*REPEAT]
+    return x_stack, y_stack, const_table
+
+
+def eval_expr_tokens_batched(tokens, ops, x_stack, const_table):
+    has_x = any(t == 'x' for t in tokens)
+    valid = torch.ones_like(x_stack, dtype=torch.bool)
+
+    vals = [(x_stack if t == 'x' else const_table[t]) for t in tokens]
+
+    # --- pass 1: *, /, ^2 ---
+    vals2 = [vals[0]]
+    ops2 = []
+    trailing_sqrt = False
+    n_ops = len(ops)
+
+    for i, sym in enumerate(ops):
+        b = vals[i + 1]
+        is_last = (i == n_ops - 1)
+        if sym in OPS_FIRST_PASS:
+            cur, v_step = OPS[sym](vals2[-1], b)
+            vals2[-1] = cur
+            valid = valid & v_step
+        elif sym == '^0.5' and is_last:
+            trailing_sqrt = True
+        else:
+            ops2.append(sym)
+            vals2.append(b)
+
+    # --- pass 2: + и - ---
+    res = vals2[0]
+    for i, sym in enumerate(ops2):
+        res, v_step = OPS[sym](res, vals2[i + 1])
+        valid = valid & v_step
+
+    if trailing_sqrt:
+        res, v_step = OPS['^0.5'](res, res)
+        valid = valid & v_step
+
+    return res, valid, has_x
+
 def validate_formula_on_all_sets(tokens_base, ops):
-    """
-    Checks the formula (structure tokens_base + ops), selected on the first set,
-    on all sets of the dataset. For each set substitutes its constants
-    by indices and checks if there exists at least one x in the range
-    such that res == y of the set with valid operations.
-    Returns (ok, xs_per_set) — ok: bool; xs_per_set: list of found x or None.
-    """
-    xs_demo = []  # for info: which x were found on the sets
-    for (y_target, consts_target) in dataset:
-        # Transfer tokens to constants of this set
-        tokens_target = remap_tokens_to_target_consts(tokens_base, CONST_POOL_BASE, consts_target)
-        # Compute
-        res, valid, has_x = eval_expr_tokens(tokens_target, ops, x_vals)
-        hits = torch.nonzero(valid & (res == y_target), as_tuple=False).flatten()
-        if hits.numel() == 0:
-            return False, None
-        # Save one demo x
-        xs_demo.append(int(x_vals[hits[0]].item()) if has_x else None)
-    return True, xs_demo
+    x_stack, y_stack, const_table = get_batched_inputs()
+
+    with torch.no_grad():
+        res, valid, has_x = eval_expr_tokens_batched(tokens_base, ops, x_stack, const_table)
+        hit = valid & (res == y_stack)                # [S, N*REPEAT]
+
+        ok_per_x_expanded = hit.all(dim=0)            # [N*REPEAT]
+
+        if REPEAT > 1:
+            ok_mask = ok_per_x_expanded.view(REPEAT, -1).any(dim=0)  # [N]
+        else:
+            ok_mask = ok_per_x_expanded                              # [N]
+
+        ok = bool(ok_mask.any().item())
+
+        xs_demo = None
+        if ok:
+            j = int(torch.nonzero(ok_mask, as_tuple=False).flatten()[0].item())
+            xs_demo = [int(x_stack[s, j].item()) for s in range(x_stack.shape[0])]
+
+    return ok, xs_demo, ok_mask
+
+
+
+def stringify_pretty(tokens, ops, x_value=None, sqrt_style="pow"):
+    def tok(t):
+        return str(x_value) if (t == 'x' and x_value is not None) else str(t)
+
+    if not tokens:
+        return ""
+
+    out = tok(tokens[0])
+    i_tok = 1
+
+    for i, op in enumerate(ops):
+        is_last = (i == len(ops) - 1)
+
+        if op in ('+','-','*','/'):
+            if i_tok >= len(tokens): break
+            out = f"{out} {op} {tok(tokens[i_tok])}"
+            i_tok += 1
+
+        elif op == '^2':
+            out = f"{out} ^2"
+            if i_tok < len(tokens):
+                i_tok += 1
+
+        elif op == '^0.5':
+            if sqrt_style == "func":
+                out = f"sqrt({out})"
+            else:
+                out = f"({out}) ^0.5"
+            if i_tok < len(tokens):
+                i_tok += 1
+
+    return out
+
 
 if device == 'cuda':
     torch.cuda.synchronize()
@@ -283,73 +388,68 @@ OPERAND_POOL_BASE = ['x'] + [str(c) for c in CONST_POOL_BASE]
 
 # stats:
 checked_exprs = 0
-solutions_found_global = 0  # how many "universal" formulas found and logged
-attempted_eqs_total_base = 0                  # (2a) scalar checks f(x)=y on the base set
-attempted_eqs_by_len_base = {L: 0 for L in range(1, 6)}
+solutions_found_global = 0
+attempted_eqs_total_base = 0
+attempted_eqs_by_len_base = defaultdict(int)
 
 time_total_start = time.time()
 
-for length in range(1, 6):  # operand length
-    # all operand sequences
-    for tokens in itertools.product(OPERAND_POOL_BASE, repeat=length):
-        # all operator sequences of corresponding length
-        OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']
+OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']
 
-        if length == 1:
-            ops_list = [()]
-        else:
-            ops_list = itertools.product(OPS_ALPHABET, repeat=length - 1)
+try:
+    # INFINITE LOOP OF LENGTHS: 1,2,3,4,5, ...
+    for length in itertools.count(1):  # CHANGED: instead of range(1, 6)
+        # all operand sequences of length `length`
+        for tokens in itertools.product(OPERAND_POOL_BASE, repeat=length):
 
-        for ops in ops_list:
-            # Compute on the BASE set (as before)
-            res, valid, has_x = eval_expr_tokens(tokens, ops, x_vals)
-            hits = torch.nonzero(valid & (res == y_base), as_tuple=False).flatten()
+            # all operator sequences of the corresponding length
+            if length == 1:
+                ops_list = [()]
+            else:
+                ops_list = itertools.product(OPS_ALPHABET, repeat=length - 1)
 
-            n_valid_base = int(valid.sum().item())
+            for ops in ops_list:
+                # Compute on the BASE set (as before)
+                res, valid, has_x = eval_expr_tokens(tokens, ops, x_vals)
+                hits = torch.nonzero(valid & (res == y_base), as_tuple=False).flatten()
 
-            # stats:
-            checked_exprs += 1
-            attempted_eqs_total_base += n_valid_base
-            attempted_eqs_by_len_base[length] += n_valid_base
+                n_valid_base = int(valid.sum().item())
 
-            if hits.numel() == 0:
-                continue
+                # stats:
+                checked_exprs += 1
+                attempted_eqs_total_base += n_valid_base
+                attempted_eqs_by_len_base[length] += n_valid_base  # lengths grow without limits
 
-            # Previously we logged right away. Now — first validate on ALL sets.
-            ok, xs_demo = validate_formula_on_all_sets(list(tokens), ops)
-            if not ok:
-                # Formula is not universal — skip without logs
-                continue
+                if hits.numel() == 0:
+                    continue
 
-            # Universal formula found — log ONCE
-            # Show the formula with x substituted from the first hit on the base set
-            x_found_base = int(x_vals[hits[0]].item()) if has_x else None
-            parts = build_formula(tokens, x_value=x_found_base)
-            formula_str = stringify(parts, ops)
-            time_total = time.time() - time_total_start
-            message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + formula_str + " at " + str(round(time_total, 2)) + " seconds"
+                ok, xs_demo, ok_mask = validate_formula_on_all_sets(list(tokens), ops)
+                if not ok:
+                    continue
 
-            print(message)
-            writeln(message)
-            solutions_found_global += 1
-            # We may NOT stop search — let it find alternative universal formulas
-            # If you want to stop at the first one — uncomment the next line:
-            # raise SystemExit
+                # Universal formula found — log ONCE
+                common_hits = torch.nonzero(ok_mask, as_tuple=False).flatten()
+                x_found_base = int(x_vals[common_hits[0]].item()) if common_hits.numel() > 0 else None
+                formula_str = stringify_pretty(list(tokens), list(ops), x_value=x_found_base, sqrt_style="pow")
+                time_total = time.time() - time_total_start
+                message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + formula_str + " at " + str(round(time_total, 2)) + " seconds"
 
-if device == 'cuda':
-    torch.cuda.synchronize()
-t1 = time.perf_counter()
+                print(message)
+                writeln(message)
+                solutions_found_global += 1
 
-# ---------------- OUTPUT ----------------
-elapsed = t1 - t0
-
-if solutions_found_global == 0:
-    print("No universal solutions found in the given range and set of expressions.")
-else:
-    print(f"Total universal formulas: {solutions_found_global}")
-
-print(f"Base constant pool: {CONST_POOL_BASE}")
-print(f"X range: [{start}, {end}]")
-print(f"Checked expressions (combinations) on the base set: ~{checked_exprs:,}")
-print(f"Time: {fmt_time(elapsed)}")
-#c:\Python311\python d:\python\maths\ludmila_gpu.py
+except KeyboardInterrupt:
+    # Graceful termination by Ctrl+C with statistics output
+    if device == 'cuda':
+        torch.cuda.synchronize()
+    elapsed = time.perf_counter() - t0
+    print("\nStopped by user (Ctrl+C). Current results:")
+    if solutions_found_global == 0:
+        print("No universal formulas found yet.")
+    else:
+        print(f"Universal formulas found: {solutions_found_global}")
+    print(f"Base constant set: {CONST_POOL_BASE}")
+    print(f"Range X: [{start}, {end}]")
+    print(f"Checked combinations on base set: ~{checked_exprs:,}")
+    print(f"Time: {fmt_time(elapsed)}")
+# c:\Python311\python d:\python\maths\ludmila_gpu.py
