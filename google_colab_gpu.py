@@ -7,7 +7,7 @@ from collections import defaultdict
 
 myLock = threading.Lock()
 
-service = "google_colab" #"google_colab" or "runpod"
+service = "runpod" #"google_colab" or "runpod"
 
 if service == "runpod":
     script_path = "/root/ludmila/ludmila"
