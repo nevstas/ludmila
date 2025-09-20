@@ -257,6 +257,38 @@ def validate_formula_on_all_sets(tokens_base, ops):
 
     return True, xs_demo, ok_mask
 
+def stringify_pretty(tokens, ops, x_value=None, sqrt_style="pow"):
+    def tok(t):
+        return str(x_value) if (t == 'x' and x_value is not None) else str(t)
+
+    if not tokens:
+        return ""
+
+    out = tok(tokens[0])
+    i_tok = 1
+
+    for i, op in enumerate(ops):
+        is_last = (i == len(ops) - 1)
+
+        if op in ('+','-','*','/'):
+            if i_tok >= len(tokens): break
+            out = f"{out} {op} {tok(tokens[i_tok])}"
+            i_tok += 1
+
+        elif op == '^2':
+            out = f"{out} ^2"
+            if i_tok < len(tokens):
+                i_tok += 1
+
+        elif op == '^0.5':
+            if sqrt_style == "func":
+                out = f"sqrt({out})"
+            else:
+                out = f"({out}) ^0.5"
+            if i_tok < len(tokens):
+                i_tok += 1
+
+    return out
 
 
 if device == 'cuda':
@@ -321,8 +353,7 @@ try:
                 # Universal formula found — log ONCE
                 common_hits = torch.nonzero(ok_mask, as_tuple=False).flatten()
                 x_found_base = int(x_vals[common_hits[0]].item()) if common_hits.numel() > 0 else None
-                parts = build_formula(tokens, x_value=x_found_base)
-                formula_str = stringify(parts, ops)
+                formula_str = stringify_pretty(list(tokens), list(ops), x_value=x_found_base, sqrt_style="pow")
                 time_total = time.time() - time_total_start
                 message = time.strftime("%d.%m.%Y %H:%M:%S") + " Solution data" + str(dataset_id) + ": " + formula_str + " at " + str(round(time_total, 2)) + " seconds"
 
