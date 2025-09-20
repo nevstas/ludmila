@@ -83,15 +83,15 @@ c:\Python311\python d:\python\maths\ludmila_cpu.py
 ```
 - The result will be in the console and also in the log file `log.txt`.
 - To run the GPU version use [ludmila_gpu.py](ludmila_gpu.py)
-- To run [google_colab_gpu.py](google_colab_gpu.py) use google colab notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
+- To run [ludmila_jupyter_gpu.py](ludmila_jupyter_gpu.py) use Jupyter Notebook [ludmila_jupyter_gpu.ipynb](ludmila_jupyter_gpu.ipynb)
 
 ## Files
 - [ludmila_cpu.py](ludmila_cpu.py) – CPU
 - [ludmila_cpu_processpool.py](ludmila_cpu_processpool.py) – CPU multiprocessing
 - [ludmila_gpu.py](ludmila_gpu.py) - GPU (recommended)
-- [google_colab_cpu.py](google_colab_cpu.py) – Google Colab CPU
-- [google_colab_cpu_processpool.py](google_colab_cpu_processpool.py) – Google Colab CPU multiprocessing  
-- [google_colab_gpu.py](google_colab_gpu.py) - Google Colab GPU (recommended), also see notebook [google_colab_gpu.ipynb](google_colab_gpu.ipynb)
+- [ludmila_jupyter_cpu.py](ludmila_jupyter_cpu.py) – Jupyter Notebook CPU
+- [ludmila_jupyter_cpu_processpool.py](ludmila_jupyter_cpu_processpool.py) – Jupyter Notebook CPU multiprocessing  
+- [ludmila_jupyter_gpu.py](ludmila_jupyter_gpu.py) - Jupyter Notebook GPU (recommended), also see notebook [ludmila_jupyter_gpu.ipynb](ludmila_jupyter_gpu.ipynb)
 
 ## Discussions on Mathematician & Programmer Forums
 - [linux.org.ru](https://www.linux.org.ru/forum/general/16478781)
