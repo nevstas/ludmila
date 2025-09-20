@@ -26,7 +26,7 @@ print("Device:", device)
 
 # X range
 start, end = -10, 10
-dtype = torch.int64
+dtype = torch.int32
 
 def fmt_time(t):
     ms = int((t % 1) * 1000)
@@ -44,13 +44,10 @@ def op_mul(a, b):
     return a * b, torch.ones_like(a, dtype=torch.bool)
 
 def op_div(a, b):
-    # strict integer divisibility and ban on division by 0
     valid = (b != 0) & (a.remainder(b) == 0)
     out = torch.empty_like(a)
-    if valid.any():
-        out[valid] = a[valid] // b[valid]
-    if (~valid).any():
-        out[~valid] = 0
+    out[valid] = torch.div(a[valid], b[valid], rounding_mode='trunc')
+    out[~valid] = 0
     return out, valid
 
 def op_pow2(a, _b_ignored):
@@ -58,20 +55,13 @@ def op_pow2(a, _b_ignored):
     return a * a, torch.ones_like(a, dtype=torch.bool)
 
 def op_sqrt(a, _b_ignored):
-    # sqrt(a) only for a >= 0 and only if a is a perfect square
     valid = (a >= 0)
-
-    # get integer root
-    r = torch.sqrt(a.float()).to(torch.int64)
-
-    # check accuracy: r*r == a
+    r = torch.sqrt(a.float()).to(a.dtype)
     valid = valid & ((r * r) == a)
 
     out = torch.empty_like(a)
-    if valid.any():
-        out[valid] = r[valid]
-    if (~valid).any():
-        out[~valid] = 0
+    out[valid] = r[valid]
+    out[~valid] = 0
     return out, valid
 
 
@@ -86,11 +76,17 @@ OPS = {
 
 OPS_FIRST_PASS = {'*', '/', '^2'}
 
+CONST_CACHE = {}
+
 def operand_tensor(token, x_vals):
     if token == 'x':
         return x_vals
-    else:
-        return torch.full_like(x_vals, int(token), dtype=x_vals.dtype, device=x_vals.device)
+    t = CONST_CACHE.get(token)
+    if t is None or t.shape != x_vals.shape or t.device != x_vals.device or t.dtype != x_vals.dtype:
+        t = torch.full_like(x_vals, int(token))
+        CONST_CACHE[token] = t
+    return t
+
 
 def eval_expr_tokens(tokens, ops, x_vals):
     has_x = any(tok == 'x' for tok in tokens)
@@ -117,8 +113,6 @@ def eval_expr_tokens(tokens, ops, x_vals):
             cur, v_step = fn(vals2[-1], b)
             vals2[-1] = cur
             valid = valid & v_step
-            if has_x and not valid.any(): break
-            if not has_x and not bool(valid.item()): break
         elif sym == '^0.5' and is_last:
             # postpone sqrt until the very end (after + and -)
             trailing_sqrt = True
@@ -128,14 +122,6 @@ def eval_expr_tokens(tokens, ops, x_vals):
             ops2.append(sym)
             vals2.append(b)
 
-    # Early exit
-    if has_x and not valid.any():
-        return torch.zeros_like(x_vals), torch.zeros_like(x_vals, dtype=torch.bool), has_x
-    if not has_x and not bool(valid.item()):
-        out = torch.zeros_like(x_vals)
-        msk = torch.zeros_like(x_vals, dtype=torch.bool)
-        return out, msk, has_x
-
     # --- Second pass: + and - ---
     res = vals2[0]
     for i, sym in enumerate(ops2):
@@ -143,8 +129,6 @@ def eval_expr_tokens(tokens, ops, x_vals):
         b = vals2[i + 1]
         res, v_step = fn(res, b)
         valid = valid & v_step
-        if has_x and not valid.any(): break
-        if not has_x and not bool(valid.item()): break
 
     # --- Deferred sqrt at the very end ---
     if trailing_sqrt:
