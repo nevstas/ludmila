@@ -310,7 +310,7 @@ attempted_eqs_by_len_base = defaultdict(int)
 
 time_total_start = time.time()
 
-OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']  # MOVE: вне цикла
+OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']
 
 try:
     # INFINITE LOOP OF LENGTHS: 1,2,3,4,5, ...
