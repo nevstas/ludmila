@@ -7,7 +7,16 @@ from collections import defaultdict
 
 myLock = threading.Lock()
 
-script_path = "/content/drive/My Drive/ludmila/ludmila"
+service = "google_colab" #"google_colab" or "runpod"
+
+if service == "runpod":
+    script_path = "/root/ludmila/ludmila"
+elif service == "google_colab":
+    script_path = "/content/drive/My Drive/ludmila/ludmila"
+else:
+    print("Unknown service")
+    exit(1)
+
 
 dataset_id = 2
 dataset_filename = "data" + str(dataset_id) + ".txt"
