@@ -24,9 +24,34 @@ dataset_filename = "data" + str(dataset_id) + ".txt"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Device:", device)
 
-# X range
+REPEAT = 256   #1024–8192
 start, end = -10, 10
 dtype = torch.int32
+
+BATCH_CACHE = None
+
+def _rebuild_batch_cache():
+    global BATCH_CACHE
+    x_stack, y_stack, const_table = build_batched_inputs(REPEAT)
+    BATCH_CACHE = {
+        "repeat": REPEAT,
+        "x": x_stack,
+        "y": y_stack,
+        "const": const_table,
+        "ncols": x_stack.shape[1],
+    }
+
+def get_batched_inputs():
+    global BATCH_CACHE
+    need = (
+        BATCH_CACHE is None
+        or BATCH_CACHE["repeat"] != REPEAT
+        or BATCH_CACHE["ncols"] != x_vals.numel() * REPEAT
+    )
+    if need:
+        _rebuild_batch_cache()
+    return BATCH_CACHE["x"], BATCH_CACHE["y"], BATCH_CACHE["const"]
+
 
 def fmt_time(t):
     ms = int((t % 1) * 1000)
@@ -235,20 +260,87 @@ def remap_tokens_to_target_consts(tokens, base_const_pool, target_consts):
                 out.append(str(target_consts[k]))
     return out
 
-def validate_formula_on_all_sets(tokens_base, ops):
-    ok_mask = torch.ones_like(x_vals, dtype=torch.bool)
-    xs_demo = []
-    for (y_target, consts_target) in dataset:
-        tokens_target = remap_tokens_to_target_consts(tokens_base, CONST_POOL_BASE, consts_target)
-        res, valid, has_x = eval_expr_tokens(tokens_target, ops, x_vals)
-        hit_mask = valid & (res == y_target)
-        ok_mask = ok_mask & hit_mask
-        if not ok_mask.any():
-            return False, None, ok_mask
-        hit_idx = torch.nonzero(hit_mask, as_tuple=False).flatten()
-        xs_demo.append(int(x_vals[hit_idx[0]].item()) if hit_idx.numel() > 0 else None)
+def build_batched_inputs(REPEAT=1):
+    S = len(dataset)
+    N = x_vals.numel()
 
-    return True, xs_demo, ok_mask
+    # [S, N]
+    x_stack = x_vals.unsqueeze(0).expand(S, N)
+    if REPEAT > 1:
+        x_stack = x_stack.repeat(1, REPEAT)  # [S, N*REPEAT]
+
+    y_vec = torch.tensor([y for (y, _) in dataset], device=device, dtype=dtype)
+    y_stack = y_vec.unsqueeze(1).expand(S, x_stack.shape[1])
+
+    const_table = {}
+    for idx, base_val in enumerate(CONST_POOL_BASE):
+        per_set = torch.tensor([consts[idx] for (_, consts) in dataset],
+                               device=device, dtype=dtype)                 # [S]
+        const_table[str(base_val)] = per_set.unsqueeze(1).expand_as(x_stack) # [S, N*REPEAT]
+    return x_stack, y_stack, const_table
+
+
+def eval_expr_tokens_batched(tokens, ops, x_stack, const_table):
+    has_x = any(t == 'x' for t in tokens)
+    valid = torch.ones_like(x_stack, dtype=torch.bool)
+
+    vals = [(x_stack if t == 'x' else const_table[t]) for t in tokens]
+
+    # --- pass 1: *, /, ^2 ---
+    vals2 = [vals[0]]
+    ops2 = []
+    trailing_sqrt = False
+    n_ops = len(ops)
+
+    for i, sym in enumerate(ops):
+        b = vals[i + 1]
+        is_last = (i == n_ops - 1)
+        if sym in OPS_FIRST_PASS:
+            cur, v_step = OPS[sym](vals2[-1], b)
+            vals2[-1] = cur
+            valid = valid & v_step
+        elif sym == '^0.5' and is_last:
+            trailing_sqrt = True
+        else:
+            ops2.append(sym)
+            vals2.append(b)
+
+    # --- pass 2: + и - ---
+    res = vals2[0]
+    for i, sym in enumerate(ops2):
+        res, v_step = OPS[sym](res, vals2[i + 1])
+        valid = valid & v_step
+
+    if trailing_sqrt:
+        res, v_step = OPS['^0.5'](res, res)
+        valid = valid & v_step
+
+    return res, valid, has_x
+
+def validate_formula_on_all_sets(tokens_base, ops):
+    x_stack, y_stack, const_table = get_batched_inputs()
+
+    with torch.no_grad():
+        res, valid, has_x = eval_expr_tokens_batched(tokens_base, ops, x_stack, const_table)
+        hit = valid & (res == y_stack)                # [S, N*REPEAT]
+
+        ok_per_x_expanded = hit.all(dim=0)            # [N*REPEAT]
+
+        if REPEAT > 1:
+            ok_mask = ok_per_x_expanded.view(REPEAT, -1).any(dim=0)  # [N]
+        else:
+            ok_mask = ok_per_x_expanded                              # [N]
+
+        ok = bool(ok_mask.any().item())
+
+        xs_demo = None
+        if ok:
+            j = int(torch.nonzero(ok_mask, as_tuple=False).flatten()[0].item())
+            xs_demo = [int(x_stack[s, j].item()) for s in range(x_stack.shape[0])]
+
+    return ok, xs_demo, ok_mask
+
+
 
 def stringify_pretty(tokens, ops, x_value=None, sqrt_style="pow"):
     def tok(t):
