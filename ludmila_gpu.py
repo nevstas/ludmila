@@ -6,18 +6,21 @@ from threading import Lock
 import os
 from collections import defaultdict
 
+# config
+dataset_id = 2
+REPEAT = 256   #1024–8192
+start, end = -10, 10
+# config
+
 myLock = threading.Lock()
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 
-dataset_id = 2
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Device:", device)
 
-REPEAT = 256   #1024–8192
-start, end = -10, 10
 dtype = torch.int32
 
 BATCH_CACHE = None

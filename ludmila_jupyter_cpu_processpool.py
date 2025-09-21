@@ -19,6 +19,10 @@ import numpy as np
 from timeit import default_timer as timer
 from numba import vectorize
 
+# config
+dataset_id = 2
+# config
+
 myLock = threading.Lock()
 
 # Path to the folder of the executing script
@@ -33,9 +37,6 @@ script_path = "/content/drive/My Drive/ludmila/ludmila"
 # bl|(;v|x0;e|**2;o|+;v|x1;e|**2;br|);e|**0.5
 
 # 3 series of prime numbers
-
-
-dataset_id = 2
 
 # File name with 'x' and 'y', for example if dataset_id = 1, dataset_filename will be 'data1.txt'
 dataset_filename = "data" + str(dataset_id) + ".txt"

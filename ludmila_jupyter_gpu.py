@@ -5,9 +5,14 @@ import threading
 from threading import Lock
 from collections import defaultdict
 
-myLock = threading.Lock()
-
+# config
 service = "runpod" #"google_colab" or "runpod"
+dataset_id = 2
+REPEAT = 256   #1024–8192
+start, end = -10, 10
+# config
+
+myLock = threading.Lock()
 
 if service == "runpod":
     script_path = "/root/ludmila/ludmila"
@@ -17,15 +22,11 @@ else:
     print("Unknown service")
     exit(1)
 
-
-dataset_id = 2
 dataset_filename = "data" + str(dataset_id) + ".txt"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Device:", device)
 
-REPEAT = 256   #1024–8192
-start, end = -10, 10
 dtype = torch.int32
 
 BATCH_CACHE = None
