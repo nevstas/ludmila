@@ -8,9 +8,11 @@ from collections import defaultdict
 # config
 service = "runpod" #"google_colab" or "runpod"
 dataset_id = 2
-REPEAT = 4096
 start, end = -10, 10
 # config
+
+VRAM = torch.cuda.get_device_properties(0).total_memory
+REPEAT = int(VRAM / (1024 ** 2))
 
 myLock = threading.Lock()
 
