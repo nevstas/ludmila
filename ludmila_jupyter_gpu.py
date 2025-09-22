@@ -8,7 +8,7 @@ from collections import defaultdict
 # config
 service = "runpod" #"google_colab" or "runpod"
 dataset_id = 2
-REPEAT = 256   #1024–8192
+REPEAT = 4096
 start, end = -10, 10
 # config
 
@@ -403,6 +403,16 @@ attempted_eqs_by_len_base = defaultdict(int)
 
 time_total_start = time.time()
 
+# speed
+spd_last = time.perf_counter()
+spd_start = spd_last
+spd_last_count = 0
+spd_window = 2.0  # seconds
+S = len(dataset)
+N = x_vals.numel()
+spd_cols_per_expr = S * N * REPEAT
+# speed
+
 OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']
 
 try:
@@ -426,6 +436,21 @@ try:
 
                 # stats:
                 checked_exprs += 1
+
+                # speed
+                _now = time.perf_counter()
+                _dt = _now - spd_last
+                if _dt >= spd_window:
+                    _rate = checked_exprs / (_now - spd_start)
+                    if device == 'cuda':
+                        _mem_gb = float(torch.cuda.memory_allocated()) / (1024**3)
+                        _dev = torch.cuda.get_device_name(0)
+                        print(f"[SPEED] {_rate:,.0f} expr/s | total {checked_exprs:,} | ~{_rate*spd_cols_per_expr:,.0f} elems/s | dev {_dev} | mem {_mem_gb:.2f} GB")
+                    else:
+                        print(f"[SPEED] {_rate:,.0f} expr/s | total {checked_exprs:,} | ~{_rate*spd_cols_per_expr:,.0f} elems/s | CPU")
+                    spd_last = _now
+                    spd_last_count = checked_exprs
+                # speed
                 attempted_eqs_total_base += n_valid_base
                 attempted_eqs_by_len_base[length] += n_valid_base  # lengths grow without limits
 
