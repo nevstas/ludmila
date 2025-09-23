@@ -12,6 +12,10 @@ REPEAT = 256   #1024–8192
 start, end = -10, 10
 # config
 
+VRAM = torch.cuda.get_device_properties(0).total_memory
+VRAM_GB = VRAM / (1024 ** 3)
+REPEAT = int(VRAM / (1024 ** 2))
+
 myLock = threading.Lock()
 
 script_path = os.path.dirname(os.path.realpath(__file__))
@@ -390,12 +394,22 @@ x_vals = torch.arange(start, end + 1, dtype=dtype, device=device)
 OPERAND_POOL_BASE = ['x'] + [str(c) for c in CONST_POOL_BASE]
 
 # stats:
-checked_exprs = 0
+expr_candidates_total = 0
 solutions_found_global = 0
 attempted_eqs_total_base = 0
 attempted_eqs_by_len_base = defaultdict(int)
 
 time_total_start = time.time()
+
+# speed
+spd_last = time.perf_counter()
+spd_start = spd_last
+spd_last_count = 0
+spd_window = 30.0  # seconds
+S = len(dataset)
+N = x_vals.numel()
+spd_cols_per_expr = S * N * REPEAT
+# speed
 
 OPS_ALPHABET = ['+', '-', '*', '/', '^2', '^0.5']
 
@@ -419,7 +433,22 @@ try:
                 n_valid_base = int(valid.sum().item())
 
                 # stats:
-                checked_exprs += 1
+                expr_candidates_total += 1
+
+                # speed
+                _now = time.perf_counter()
+                _dt = _now - spd_last
+                if _dt >= spd_window:
+                    _rate = expr_candidates_total / (_now - spd_start)
+                    if device == 'cuda':
+                        _mem_gb = float(torch.cuda.memory_allocated()) / (1024**3)
+                        _dev = torch.cuda.get_device_name(0)
+                        print(f"[SPEED] {_rate:,.0f} candidates/s | total {expr_candidates_total:,} | ~{_rate*spd_cols_per_expr:,.0f} elems/s | dev {_dev} | mem {_mem_gb:.2f} GB, total {VRAM_GB:.2f} GB")
+                    else:
+                        print(f"[SPEED] {_rate:,.0f} candidates/s | total {expr_candidates_total:,} | ~{_rate*spd_cols_per_expr:,.0f} elems/s | CPU")
+                    spd_last = _now
+                    spd_last_count = expr_candidates_total
+                # speed
                 attempted_eqs_total_base += n_valid_base
                 attempted_eqs_by_len_base[length] += n_valid_base  # lengths grow without limits
 
@@ -453,6 +482,6 @@ except KeyboardInterrupt:
         print(f"Universal formulas found: {solutions_found_global}")
     print(f"Base constant set: {CONST_POOL_BASE}")
     print(f"Range X: [{start}, {end}]")
-    print(f"Checked combinations on base set: ~{checked_exprs:,}")
+    print(f"Checked combinations on base set: ~{expr_candidates_total:,}")
     print(f"Time: {fmt_time(elapsed)}")
 # c:\Python311\python d:\python\maths\ludmila_gpu.py
